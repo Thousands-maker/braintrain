@@ -186,6 +186,20 @@ details.tip ol,.coach ol{margin:0;padding-left:1.3em;display:flex;flex-direction
 .istep{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:start}
 .inum{width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:1.1rem}
 .istep h3{margin-bottom:2px}
+/* lessons */
+.linkbtn{background:none;border:none;padding:0;min-height:36px;color:var(--accent);font-weight:700;text-decoration:underline;text-underline-offset:3px;text-align:left;align-self:flex-start}
+.exlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:ex}
+.exlist li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.exhead{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.exhead span{color:var(--muted);font-size:.85rem}
+.exhead b{text-transform:uppercase;letter-spacing:.05em;color:var(--accent)}
+.sounds .hook{display:block;font-size:.7rem;color:var(--muted);line-height:1.25;margin-top:2px}
+.rules{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.expect{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+.expect li{position:relative;padding:0 0 12px 22px;border-left:2px solid var(--line);margin-left:6px}
+.expect li:last-child{border-left-color:transparent;padding-bottom:0}
+.expect li::before{content:"";position:absolute;left:-7px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--brass)}
+.guidegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 /* nav */
 .nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;z-index:5}
 .nav-in{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:100%;max-width:640px}
@@ -317,7 +331,7 @@ function nav(){$("#nav").innerHTML=[["train","Train"],["progress","Progress"],["
 function go(v){stopTimer();G=null;view=v;render();window.scrollTo(0,0)}
 function render(){nav();const m=$("#main");
   if(G){m.innerHTML=renderGame();afterGame();return}
-  m.innerHTML=view==="train"?home():view==="progress"?progress():view==="palace"?palace():view==="method"?method():view==="code"?codeTable():"";
+  m.innerHTML=view==="train"?home():view==="progress"?progress():view==="palace"?palace():view==="method"?method():view==="code"?codeTable():view==="lesson"?lesson(lessonM):"";
   if(view==="progress")fillBackup();
 }
 let toastT;function toast(t){const e=$("#toast");e.textContent=t;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>e.hidden=true,2600)}
@@ -337,6 +351,7 @@ function nextUp(){ensureDaily();
 function intro(){const step=(n,t,b)=>'<li class="istep"><span class="inum">'+n+'</span><div><h3>'+t+'</h3><p class="small muted">'+b+'</p></div></li>';
   return '<div class="stack-lg"><div class="stack" style="gap:6px"><span class="label">Welcome to BrainTrain</span><h1>Train your memory the way champions do</h1><p class="muted">The routine is the same every day, so it only takes a minute to learn.</p></div>'+
   '<ol class="isteps">'+step(1,"Build your palace once","Pick about 20 spots in your home, in walking order. Every game stores things on these spots.")+step(2,"Do today's set","Four short games in a fixed order, about 25 minutes. The big button on the home screen always shows the next one.")+step(3,"Come back tomorrow","Reviews are spaced over days, so returning daily is what builds lasting memory. Your streak and level track it.")+'</ol>'+
+  '<section class="card stack"><h3>What to expect</h3><ol class="expect small"><li><b>First few days:</b> slow and clumsy. You\'ll forget things. Everyone does; you\'re learning a skill, not testing a talent.</li><li><b>Week 2:</b> images come faster and start to stick.</li><li><b>Weeks 4–6:</b> the big jump. Beginners in the Dresler study more than doubled their recall with 30 minutes a day.</li></ol><p class="small muted">Each game opens with a short guide and a worked example the first time you play it.</p></section>'+
   '<div class="card small muted">Your progress saves automatically on this device. There\'s a backup code in Progress if you ever switch phones.</div>'+
   '<button class="btn primary block" data-act="introdone">Let\'s start</button></div>'}
 function home(){ensureDaily();if(!S.seenIntro)return intro();
@@ -352,11 +367,50 @@ function home(){ensureDaily();if(!S.seenIntro)return intro();
   '</div>'
 }
 
+/* ---------- lessons ---------- */
+const LESSONS={
+ words:{title:"How the memory palace works",
+  what:"You already know your home perfectly, so the route costs no effort to remember. You only add something new: one vivid image per spot. To recall, you walk the route in your head and look at each spot. The spot cues the image, and the image gives you the word.",
+  ex:[["Front door","balloon","A giant red balloon is wedged in the doorway. It squeaks as you squeeze past."],["Shoe rack","lemon","Your shoes are stuffed with lemons. Juice squirts out when you step in."],["Sofa","piano","A piano lies across the sofa, playing itself and crushing the cushions."]],
+  recall:"To recall, go back to the front door. What's stuck there? You hear the squeak: balloon. Shoe rack: a sour smell, so lemon. Sofa: the crushed cushions, so piano.",
+  rules:["Make it big, moving, absurd or gross. Ordinary images fade.","Make the image touch or interact with the spot.","Add a sound, smell or feeling.","Spend 5–10 seconds per spot actually seeing it."],
+  expect:["Rounds 1–5: slow and clumsy, and you'll miss spots. This is normal.","Week 2: images start coming faster and stick better.","Weeks 4–6: in the Dresler study, beginners went from about 26 to about 62 of 72 words."]},
+ numbers:{title:"How Numbers works",
+  what:"Digits are abstract, so they don't stick. The trick is to turn every pair of digits into a picture using the Major code, then put those pictures on your palace route.",
+  ex:[["31","mat","3 = m, 1 = t → mat. A doormat at the front door."],["41","rat","4 = r, 1 = t → rat. A rat chewing the shoe rack."],["59","lip","5 = l, 9 = p → lip. Giant lips kissing the sofa."]],
+  recall:"To recall, walk the route: doormat → m-t → 31. Rat → r-t → 41. Lips → l-p → 59. The digits come back as 314159.",
+  rules:["Learn the code first. The Major drill teaches you the 100 images.","Use Show Major words while you're learning. It halves your points, but that's fine.","One image per spot, in order."],
+  expect:["The first weeks are slow because you're decoding each pair.","Once the 100 images are automatic (in box 3+ in the drill), speed jumps.","For scale: one trained student went from 7 to 79 digits over about two years."]},
+ names:{title:"How Names & faces works",
+  what:"Names are hard because they mean nothing. You fix that by turning the name into a picture, then attaching that picture to the most noticeable feature of the face.",
+  ex:[["Bushy eyebrows","Ravi","Ravioli are stuck all over his eyebrows."],["Round glasses","Grace","A swan glides gracefully across each lens."],["Big curly hair","Marcus","A marker pen is lost in the curls, scribbling everywhere."]],
+  recall:"To recall, look at the face. What stands out? The eyebrows have ravioli on them: Ravi.",
+  rules:["Pick the feature first, then the name image.","A sound-alike is fine (Sofia → sofa). It doesn't have to be exact.","Exaggerate: the feature should be doing something."],
+  expect:["Expect to get about half right at first. Names are the hardest of the four.","It improves fastest when you use it on real people: try it at your next meeting."]},
+ major:{title:"How the Major code works",
+  what:"Each digit stands for a consonant sound. Vowels and w, h, y don't count, so you can fill them in to make a word. Two digits make one picture you can see.",
+  ex:[["0","s, z","z is for zero"],["1","t, d","t has one downstroke"],["2","n","n has two legs"],["3","m","m has three legs"],["4","r","four ends in r"],["5","l","five fingers held up make an L"],["6","j, sh, ch","a J looks like a backwards 6"],["7","k, hard g","a K is built from two 7s"],["8","f, v","a handwritten f has two loops, like 8"],["9","p, b","a P is a backwards 9"]],
+  recall:"So 47 is r-k: rock. 92 is p-n: pen. You learn each of the 100 words once, then they become automatic.",
+  rules:["Learn the 10 sounds above first. They're the whole system.","The drill brings back cards you know less often and misses sooner.","About 5 minutes a day is enough."],
+  expect:["The first week, the drill introduces a few new cards each day.","Cards you get right come back after 1, 3, 7, then 16 days.","Most people learn all 100 in 3–5 weeks of daily drills."]}
+};
+let lessonM=null;
+function lesson(m){const L=LESSONS[m];
+  const ex=m==="major"?'<div class="sounds">'+L.ex.map(e=>'<div><b>'+e[0]+'</b>'+e[1]+'<span class="hook">'+e[2]+'</span></div>').join("")+'</div>'
+    :'<ol class="exlist">'+L.ex.map(e=>'<li><div class="exhead"><span>'+e[0]+'</span><b>'+e[1]+'</b></div><p class="small">'+e[2]+'</p></li>').join("")+'</ol>';
+  return '<div class="stack-lg"><div class="row between"><span class="label">Guide · '+MODES[m]+'</span><button class="btn ghost" data-act="go" data-v="train">Close</button></div>'+
+  '<h1>'+L.title+'</h1><p>'+L.what+'</p>'+
+  '<section class="stack"><h3>'+(m==="major"?"The 10 sounds":"Worked example")+'</h3>'+ex+'<p class="small muted">'+L.recall+'</p></section>'+
+  '<section class="card stack"><h3>Rules that make it stick</h3><ul class="rules">'+L.rules.map(r=>'<li>'+r+'</li>').join("")+'</ul></section>'+
+  '<section class="stack"><h3>What to expect</h3><ol class="expect">'+L.expect.map(r=>'<li>'+r+'</li>').join("")+'</ol></section>'+
+  '<button class="btn primary block" data-act="lessongo" data-m="'+m+'">'+((S.lessons||{})[m]?"Start "+MODES[m].toLowerCase():"Got it, let me try")+' →</button></div>'}
+
 /* ---------- games ---------- */
 function stopTimer(){if(timerId){clearInterval(timerId);timerId=null}}
 function startTimer(){stopTimer();timerId=setInterval(()=>{const e=$("#timer");if(e&&G)e.textContent=fmt(Date.now()-G.t0)},200)}
 const fmt=ms=>{const s=Math.floor(ms/1000);return Math.floor(s/60)+":"+z(s%60)};
-function start(m){stopTimer();
+function start(m,force){stopTimer();
+  if(m!=="echo"&&!force&&!(S.lessons&&S.lessons[m])){G=null;lessonM=m;view="lesson";render();window.scrollTo(0,0);return}
   if(m==="numbers"){const n=S.lvl.numbers;let d="";for(let i=0;i<n;i++)d+=rnd(10);G={mode:m,phase:"study",n,digits:d,hints:false,used:false,t0:Date.now()}}
   if(m==="words"){const n=S.lvl.words;G={mode:m,phase:"study",n,items:sample(WORDS,n),t0:Date.now()}}
   if(m==="echo"){G={mode:m,phase:"recall",n:S.echo.items.length,items:S.echo.items,t0:Date.now()}}
@@ -373,7 +427,8 @@ const COACH={
  names:["Pick one striking feature on each face: eyebrows, glasses, chin, hair.","Turn the name into a picture (Ravi → ravioli, Grace → a swan gliding).","Stick that picture onto the feature. Then tap I'm ready."],
  major:["Each digit is a consonant sound: 0 = s, 1 = t, 2 = n, and so on.","Tap the matching word or number.","Right answers come back after longer gaps; misses come back tomorrow."]};
 function coach(m){const n=(S.plays&&S.plays[m])||0,li=COACH[m].map(x=>'<li>'+x+'</li>').join("");
-  return n<3?'<div class="coach"><span class="label">How to play</span><ol>'+li+'</ol></div>':'<details class="more tip"><summary>How to play</summary><ol class="small">'+li+'</ol></details>'}
+  const g='<button class="linkbtn" data-act="lesson" data-m="'+m+'">Read the full guide</button>';
+  return n<3?'<div class="coach"><span class="label">How to play</span><ol>'+li+'</ol>'+g+'</div>':'<details class="more tip"><summary>How to play</summary><ol class="small">'+li+'</ol>'+g+'</details>'}
 function stepper(mode,phase){const L=mode==="major"?["Answer","Score"]:mode==="echo"?["Recall","Score"]:["Memorize","Recall","Score"];
   const cur=phase==="result"?L.length-1:(phase==="recall"&&L.length===3)?1:0;
   return '<ol class="stepper" aria-label="Progress in this game">'+L.map((l,i)=>'<li class="'+(i<cur?"past":i===cur?"now":"")+'"'+(i===cur?' aria-current="step"':'')+'>'+l+'</li>').join("")+'</ol>'}
@@ -501,7 +556,7 @@ function method(){const c=(t,b,src,url)=>'<section class="card method"><h3>'+t+'
   c("Names and faces","Names are hard because they carry no meaning. The fix is elaborative encoding: turn the name into a concrete image and attach it to a distinctive feature of the face, then test yourself. The same imagery and retrieval principles apply.","Applied from the loci and retrieval research above","")+
   c("What to expect","Generic brain-training games show little transfer to everyday memory. The gains here come from strategies, so use them on real material: phone numbers, names at meetings, talk outlines, shopping lists. That is where the skill becomes yours.","Simons et al., 2016, Psychological Science in the Public Interest","https://doi.org/10.1177/1529100616661983")+
   '<section class="card stack"><h3>The Major System</h3><p class="small">Each digit is a consonant sound. Vowels and w, h, y are fillers. Two digits make one image.</p><div class="sounds">'+SOUNDS.map((s,i)=>'<div><b>'+i+'</b>'+s+'</div>').join("")+'</div><button class="btn" data-act="go" data-v="code">See all 100 images</button></section>'+
-  '<button class="btn" data-act="replayintro">Replay the welcome guide</button><section class="card stack"><h3>A weekly rhythm</h3><p class="small">Daily: Major drill (5 min), one Word palace round, one Numbers round, one Names round. That is the daily set and roughly the 30-minute dose from the Neuron study. Come back after 10 minutes or more for Echo recall.</p></section></div>'}
+  '<section class="card stack"><h3>Guides for each game</h3><div class="guidegrid">'+["words","numbers","major","names"].map(m=>'<button class="btn" data-act="lesson" data-m="'+m+'">'+MODES[m]+'</button>').join("")+'</div><button class="btn ghost" data-act="replayintro">Replay the welcome guide</button></section><section class="card stack"><h3>A weekly rhythm</h3><p class="small">Daily: Major drill (5 min), one Word palace round, one Numbers round, one Names round. That is the daily set and roughly the 30-minute dose from the Neuron study. Come back after 10 minutes or more for Echo recall.</p></section></div>'}
 function codeTable(){return '<div class="stack-lg"><div class="row between"><h1>The 00–99 code</h1><button class="btn ghost" data-act="go" data-v="'+(G?"train":"method")+'">Back</button></div><div class="sounds">'+SOUNDS.map((s,i)=>'<div><b>'+i+'</b>'+s+'</div>').join("")+'</div><div class="code">'+Object.keys(MAJOR).map(k=>'<div><b>'+k+'</b>'+MAJOR[k]+'</div>').join("")+'</div></div>'}
 
 /* ---------- events ---------- */
@@ -517,6 +572,8 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
   else if(a==="next")next();
   else if(a==="saveloci"){const v=$("#loci").value.split("\n").map(s=>s.trim()).filter(Boolean);if(v.length<5){toast("Add at least 5 spots to your route");return}S.loci=v.slice(0,200);S.lociExample=false;save();toast("Route saved · "+S.loci.length+" spots");go("train")}
   else if(a==="keepex"){S.lociExample=false;save();toast("Using the example route. Change it anytime in Palace");go("train")}
+  else if(a==="lesson"){stopTimer();G=null;lessonM=b.dataset.m;view="lesson";render();window.scrollTo(0,0)}
+  else if(a==="lessongo"){S.lessons=S.lessons||{};S.lessons[b.dataset.m]=true;save();start(b.dataset.m,true)}
   else if(a==="introdone"){S.seenIntro=true;save();render();window.scrollTo(0,0)}
   else if(a==="replayintro"){S.seenIntro=false;save();go("train")}
   else if(a==="copy"){const t=$("#exp");const done=()=>toast("Backup code copied");try{navigator.clipboard.writeText(t.value).then(done,()=>{t.select();toast("Selected. Copy it manually")})}catch(err){t.select();toast("Selected. Copy it manually")}}
