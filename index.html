@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EFE8DA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#151A2C" media="(prefers-color-scheme: dark)">
 <meta name="description" content="Memory training game: method of loci, Major System, names and faces, spaced repetition.">
 <title>BrainTrain</title>
 
@@ -11,25 +13,27 @@
 <style>
 /* Layout: single-column training hall, max 640px, cards per discipline, fixed bottom tab bar */
 :root{
-  --bg:#ECEFF4; --surface:#FFFFFF; --sunk:#E2E6EE; --ink:#1A1F36; --muted:#5B6280; --line:#D3D8E4;
-  --accent:#0E6B66; --accent-ink:#FFFFFF; --accent-soft:#D5ECE9;
-  --brass:#B07A12; --brass-soft:#F5E6C4;
-  --good:#1D7F48; --good-soft:#D8F0E2; --bad:#B8362F; --bad-soft:#F8DEDB;
+  /* Pantone Spring/Summer 2027: Antique White ground, Blue Indigo ink, Princess Blue accent,
+     Arrowwood + Anise Flower for XP, Waterfall for correct, Chili Pepper for misses */
+  --bg:#EFE8DA; --surface:#FBF8F1; --sunk:#E5DCC9; --ink:#1F2440; --muted:#49516D; --line:#D9CFBB;
+  --accent:#00539C; --accent-ink:#FFFFFF; --accent-soft:#D6E2EF;
+  --brass:#9C7414; --brass-soft:#F4E3B5;
+  --good:#17796F; --good-soft:#D2ECE7; --bad:#9B1B30; --bad-soft:#F5D9DB;
   --display:"Young Serif", Georgia, "Times New Roman", serif;
   --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   --r:14px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#10131C; --surface:#191D2A; --sunk:#232838; --ink:#E8EAF2; --muted:#9BA2BC; --line:#2D3348;
-  --accent:#4CC3B8; --accent-ink:#06201E; --accent-soft:#16373A;
-  --brass:#E6B34E; --brass-soft:#3A3020;
-  --good:#5ACB88; --good-soft:#18352A; --bad:#F27C72; --bad-soft:#3E2124; color-scheme:dark}}
+  --bg:#151A2C; --surface:#1E2439; --sunk:#29304A; --ink:#EDE3D2; --muted:#A9AEC6; --line:#353C59;
+  --accent:#6FA6E2; --accent-ink:#0A1A33; --accent-soft:#1C2E4D;
+  --brass:#DDB24A; --brass-soft:#3A3120;
+  --good:#3AB0A6; --good-soft:#163733; --bad:#E57A64; --bad-soft:#40232A; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#10131C; --surface:#191D2A; --sunk:#232838; --ink:#E8EAF2; --muted:#9BA2BC; --line:#2D3348;
-  --accent:#4CC3B8; --accent-ink:#06201E; --accent-soft:#16373A;
-  --brass:#E6B34E; --brass-soft:#3A3020;
-  --good:#5ACB88; --good-soft:#18352A; --bad:#F27C72; --bad-soft:#3E2124; color-scheme:dark}
+  --bg:#151A2C; --surface:#1E2439; --sunk:#29304A; --ink:#EDE3D2; --muted:#A9AEC6; --line:#353C59;
+  --accent:#6FA6E2; --accent-ink:#0A1A33; --accent-soft:#1C2E4D;
+  --brass:#DDB24A; --brass-soft:#3A3120;
+  --good:#3AB0A6; --good-soft:#163733; --bad:#E57A64; --bad-soft:#40232A; color-scheme:dark}
 *{box-sizing:border-box}
 html{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}
 body{margin:0}
@@ -278,7 +282,7 @@ function face(seed){
   let x=seed%233280;const r=()=>{x=(x*9301+49297)%233280;return x/233280};const pick=a=>a[Math.floor(r()*a.length)];
   const skin=pick(["#F3D3B8","#E8BC98","#CF9668","#A86E44","#7E4E2E","#5A3620"]);
   const hair=pick(["#1E1A18","#3B2618","#6B4423","#A0662E","#D2B06E","#8E8E8E","#B5452E","#2B2F55"]);
-  const bg=pick(["#BFD7EA","#F2D0A9","#C9E4CA","#E5C1D8","#D8D2F0","#F4E1A1","#B9E3E0"]);
+  const bg=pick(["#F4E3B5","#C9D77E","#E9B3BD","#C2B4DC","#8FD1C8","#E9A48F","#A9C4E4"]);
   const shirt=pick(["#2F4B7C","#7A2E3A","#2E6B4F","#C9A227","#5C5C6E","#D0623A","#6A4C93"]);
   const style=Math.floor(r()*6),glasses=r()<.32,beard=r()<.22,ear=r()<.25,rx=19+r()*5,ry=23+r()*4,mouth=2+r()*6,brow=r()*3;
   let s='<svg viewBox="0 0 100 100" role="img" aria-label="Portrait"><rect width="100" height="100" fill="'+bg+'"/>';
