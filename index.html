@@ -33,6 +33,7 @@
 *{box-sizing:border-box}
 html{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}
 body{margin:0}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
 .wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:14px calc(96px + env(safe-area-inset-bottom,0px))}
 h1,h2,h3{font-family:var(--display);font-weight:400;line-height:1.2;text-wrap:balance;margin:0}
@@ -144,6 +145,43 @@ textarea{min-height:120px;resize:vertical}
 .sounds b{font-family:var(--mono);display:block;font-size:1.1rem;color:var(--accent)}
 .method h3{margin-bottom:6px}
 .method .src{font-size:.82rem;color:var(--muted);margin-top:8px}
+/* guided home */
+.strip{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px 12px;align-items:end}
+.strip b{display:block;font-size:.98rem;line-height:1.25}
+.strip .bar{height:6px}
+.next{background:var(--accent);color:var(--accent-ink);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.next .label{color:var(--accent-ink);opacity:.85}
+.next h2{font-size:1.75rem}
+.next p{opacity:.92}
+.next .btn{background:var(--accent-ink);color:var(--accent);border:none;font-size:1.05rem;min-height:52px;margin-top:4px}
+.slist{display:flex;flex-direction:column;gap:8px}
+.srow{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;min-height:58px}
+.srow .snum{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-family:var(--mono);font-weight:700;background:var(--sunk);color:var(--muted)}
+.srow .stext{display:flex;flex-direction:column;min-width:0}
+.srow .stag{font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.srow.cur{border:2px solid var(--accent)}
+.srow.cur .snum{background:var(--accent);color:var(--accent-ink)}
+.srow.cur .stag{color:var(--accent)}
+.srow.done{background:transparent}
+.srow.done .snum{background:var(--good-soft);color:var(--good)}
+.srow.done .stag{color:var(--good)}
+.srow.done b{color:var(--muted)}
+.srow:focus-visible,details summary:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+details.more{border-top:1px solid var(--line);padding-top:12px}
+details.more summary{cursor:pointer;font-weight:700;color:var(--muted);min-height:36px;display:flex;align-items:center;gap:6px}
+details.more[open] summary{margin-bottom:10px}
+details.tip{border:none;padding:0}
+details.tip ol,.coach ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+.coach{background:var(--brass-soft);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.coach .label{color:var(--brass)}
+.stepper{list-style:none;margin:0 0 12px;padding:0;display:flex;gap:6px}
+.stepper li{flex:1;font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding-top:8px;border-top:4px solid var(--line)}
+.stepper li.past{border-color:var(--accent)}
+.stepper li.now{border-color:var(--accent);color:var(--accent)}
+.isteps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
+.istep{display:grid;grid-template-columns:40px minmax(0,1fr);gap:12px;align-items:start}
+.inum{width:40px;height:40px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:1.1rem}
+.istep h3{margin-bottom:2px}
 /* nav */
 .nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;z-index:5}
 .nav-in{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:100%;max-width:640px}
@@ -227,7 +265,7 @@ function checkBadges(){const fresh=[];for(const b of BADGES){if(!S.badges.includ
 
 function finish(mode,r){
   ensureDaily();const before=lvlInfo(S.xp).L;const d=today();
-  S.xp+=r.score;S.days[d]=(S.days[d]||0)+r.score;
+  S.xp+=r.score;S.days[d]=(S.days[d]||0)+r.score;S.plays=S.plays||{};S.plays[mode]=(S.plays[mode]||0)+1;
   S.sessions.unshift({t:Date.now(),mode,score:r.score,c:r.correct,n:r.total});if(S.sessions.length>300)S.sessions.length=300;
   let bonus=0;const set=["numbers","words","names","major"];
   if(set.includes(mode)&&!S.daily.done.includes(mode)){S.daily.done.push(mode);if(S.daily.done.length===4){bonus=50;S.xp+=50;S.days[d]+=50;S.flags.full=true}}
@@ -281,22 +319,32 @@ function render(){nav();const m=$("#main");
 let toastT;function toast(t){const e=$("#toast");e.textContent=t;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>e.hidden=true,2600)}
 
 /* ---------- home ---------- */
-function ringSVG(v,goal){const p=clamp(v/goal,0,1),R=38,C=2*Math.PI*R;return '<svg class="ring" viewBox="0 0 92 92" aria-label="Daily goal '+v+' of '+goal+' XP"><circle cx="46" cy="46" r="'+R+'" fill="none" stroke="var(--sunk)" stroke-width="9"/><circle cx="46" cy="46" r="'+R+'" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+(C*p)+' '+C+'" transform="rotate(-90 46 46)"/><text x="46" y="45" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="17" fill="var(--ink)">'+v+'</text><text x="46" y="61" text-anchor="middle" font-size="10" fill="var(--muted)">of '+goal+' XP</text></svg>'}
-function home(){ensureDaily();const li=lvlInfo(S.xp),st=streak(),todayXP=S.days[today()]||0,due=majorDue().length,learned=majorStats().slice(3).reduce((a,b)=>a+b,0);
-  let echo="";if(S.echo){const wait=10*60000-(Date.now()-S.echo.at);echo=wait<=0?'<div class="echo stack"><div class="label" style="color:var(--brass)">Echo recall ready · double points</div><p>Recall the '+S.echo.items.length+' words from your last palace walk. Delayed retrieval is what makes memories last.</p><button class="btn primary" data-act="start" data-m="echo">Walk the palace again</button></div>':'<div class="card small muted">Echo recall unlocks in '+Math.ceil(wait/60000)+' min. Come back to test your last word list after a delay.</div>'}
-  const disc=(m,glyph,title,desc,lvl,best)=>'<button class="disc" data-act="start" data-m="'+m+'"><span class="glyph">'+glyph+'</span><h3>'+title+'</h3><span class="small muted">'+desc+'</span><span class="meta"><span>'+lvl+'</span><span>'+best+'</span></span></button>';
-  return '<div class="stack-lg">'+
-  '<section class="card"><div class="hero"><div class="stack" style="gap:6px;min-width:0"><span class="label">Level '+li.L+'</span><span class="rank">'+li.rank+'</span><div class="bar" aria-label="Level progress"><i style="width:'+(li.pct*100).toFixed(1)+'%"></i></div><span class="small muted num">'+(S.xp-li.lo)+' / '+(li.hi-li.lo)+' XP to level '+(li.L+1)+'</span></div>'+ringSVG(todayXP,150)+'</div>'+
-  '<div class="stats3"><div class="stat"><span class="label">Streak</span><b>'+st+'d</b></div><div class="stat"><span class="label">Total XP</span><b>'+S.xp+'</b></div><div class="stat"><span class="label">Badges</span><b>'+S.badges.length+'/'+BADGES.length+'</b></div></div></section>'+
-  '<section class="stack"><div class="row between"><h2>Today\'s set</h2><span class="small muted">+50 XP for all four</span></div><div class="chips">'+["numbers","words","names","major"].map(m=>'<span class="chip'+(S.daily.done.includes(m)?" done":"")+'">'+(S.daily.done.includes(m)?"✓ ":"")+MODES[m]+'</span>').join("")+'</div></section>'+
-  echo+
-  '<section class="discs">'+
-   disc("words","LOCI","Word palace","Place words along your route, then walk it back.",S.lvl.words+" words",'Best '+S.best.words)+
-   disc("numbers","0–9","Numbers","Turn digit pairs into images and store them.",S.lvl.numbers+" digits",'Best '+S.best.numbers)+
-   disc("major","SRS","Major drill","Spaced review of the 00–99 code.",due?due+" due":"Learned "+learned+"/100",'Box 3+: '+learned)+
-   disc("names","FACE","Names & faces","Hook each name to a feature of the face.",S.lvl.names+" people",'Best '+S.best.names)+
-  '</section>'+
-  '<p class="small muted">Aim for 20–30 minutes a day. That is the dose that doubled word recall in six weeks in the Dresler 2017 study. See Method.</p>'+
+const ORDER=["major","words","numbers","names"];
+const BLURB={major:"About 5 min. Learn the 00–99 image code.",words:"Store a word list along your route.",numbers:"Turn digits into images and store them.",names:"Link each name to a feature of the face."};
+const LEVEL_TXT=m=>m==="numbers"?S.lvl.numbers+" digits":m==="words"?S.lvl.words+" words":m==="names"?S.lvl.names+" people":(majorDue().length?majorDue().length+" cards due":"new cards");
+function nextUp(){ensureDaily();
+  if(S.lociExample)return{label:"Start here · one-time setup",title:"Set up your memory palace",why:"Every game uses a route through a place you know. It takes about 3 minutes, once.",btn:"Build my route",act:'data-act="go" data-v="palace"'};
+  if(S.echo&&Date.now()-S.echo.at>=600000)return{label:"Bonus · double points",title:"Echo recall is ready",why:"Recall your last word list after a delay. This is what makes memories last.",btn:"Start echo recall",act:'data-act="start" data-m="echo"'};
+  const m=ORDER.find(x=>!S.daily.done.includes(x));
+  if(m)return{label:"Next up · step "+(ORDER.indexOf(m)+1)+" of 4",title:MODES[m],why:BLURB[m]+" Today: "+LEVEL_TXT(m)+".",btn:"Start "+MODES[m].toLowerCase(),act:'data-act="start" data-m="'+m+'"',mode:m};
+  const due=majorDue().length;
+  return{label:"Today's set is done",title:due?"Clear your due cards":"Extra round, if you like",why:due?due+" Major cards are due. Clearing them keeps the code solid.":"You've done the work for today. Come back tomorrow to keep your streak. An extra word palace round never hurts.",btn:due?"Review due cards":"Extra word palace",act:'data-act="start" data-m="'+(due?"major":"words")+'"',done:true};
+}
+function intro(){const step=(n,t,b)=>'<li class="istep"><span class="inum">'+n+'</span><div><h3>'+t+'</h3><p class="small muted">'+b+'</p></div></li>';
+  return '<div class="stack-lg"><div class="stack" style="gap:6px"><span class="label">Welcome to BrainTrain</span><h1>Train your memory the way champions do</h1><p class="muted">The routine is the same every day, so it only takes a minute to learn.</p></div>'+
+  '<ol class="isteps">'+step(1,"Build your palace once","Pick about 20 spots in your home, in walking order. Every game stores things on these spots.")+step(2,"Do today's set","Four short games in a fixed order, about 25 minutes. The big button on the home screen always shows the next one.")+step(3,"Come back tomorrow","Reviews are spaced over days, so returning daily is what builds lasting memory. Your streak and level track it.")+'</ol>'+
+  '<div class="card small muted">Your progress saves automatically on this device. There\'s a backup code in Progress if you ever switch phones.</div>'+
+  '<button class="btn primary block" data-act="introdone">Let\'s start</button></div>'}
+function home(){ensureDaily();if(!S.seenIntro)return intro();
+  const li=lvlInfo(S.xp),st=streak(),todayXP=S.days[today()]||0,nu=nextUp();
+  const strip='<section class="strip"><div><span class="label">Level '+li.L+'</span><b>'+li.rank+'</b></div><div><span class="label">Streak</span><b class="num">'+st+' day'+(st===1?"":"s")+'</b></div><div><span class="label">Today</span><b class="num">'+todayXP+' XP</b></div><div class="bar" style="grid-column:1/-1" aria-label="Level progress"><i style="width:'+(li.pct*100).toFixed(1)+'%"></i></div></section>';
+  const next='<section class="next pop"><span class="label">'+nu.label+'</span><h2>'+nu.title+'</h2><p>'+nu.why+'</p><button class="btn block" '+nu.act+'>'+nu.btn+' →</button></section>';
+  const rows=ORDER.map((m,i)=>{const done=S.daily.done.includes(m),cur=nu.mode===m;return '<button class="srow'+(done?" done":"")+(cur?" cur":"")+'" data-act="start" data-m="'+m+'"><span class="snum">'+(done?"✓":i+1)+'</span><span class="stext"><b>'+MODES[m]+'</b><span class="small muted">'+LEVEL_TXT(m)+'</span></span><span class="stag">'+(done?"Done":cur?"Up next":"")+'</span></button>'}).join("");
+  let echo="";if(S.echo&&!S.lociExample){const wait=600000-(Date.now()-S.echo.at);if(wait>0)echo='<p class="small muted">Echo recall of your last word list unlocks in '+Math.ceil(wait/60000)+' min.</p>'}
+  const disc=(m,t)=>'<button class="disc" data-act="start" data-m="'+m+'"><b>'+t+'</b><span class="small muted">'+LEVEL_TXT(m)+'</span><span class="small muted">Best '+(m==="major"?majorStats().slice(3).reduce((a,b)=>a+b,0)+"/100":S.best[m])+'</span></button>';
+  return '<div class="stack-lg">'+strip+next+
+  '<section class="stack"><div class="row between"><h3>Today\'s set</h3><span class="small muted">'+S.daily.done.length+'/4 · +50 XP bonus</span></div><div class="slist">'+rows+'</div>'+echo+'</section>'+
+  '<details class="more"><summary>Practise one game freely</summary><div class="discs">'+disc("words","Word palace")+disc("numbers","Numbers")+disc("major","Major drill")+disc("names","Names & faces")+'</div></details>'+
   '</div>'
 }
 
@@ -315,25 +363,35 @@ function start(m){stopTimer();
   view="train";render();window.scrollTo(0,0);
 }
 function newQ(){const k=G.q[G.i];const dir=rnd(2);const others=sample(Object.keys(MAJOR).filter(x=>x!==k),3);G.cur={k,dir,opts:shuffle([k].concat(others)),picked:null,isNew:!S.major[k]}}
-function head(title,sub){return '<div class="gamehead"><div class="stack" style="gap:2px"><span class="label">'+title+'</span><h2>'+sub+'</h2></div><div class="row"><span id="timer" class="timer">'+(G?fmt(Date.now()-G.t0):"")+'</span><button class="btn ghost" data-act="quit">Quit</button></div></div>'}
+const COACH={
+ words:["Read the spot on the left, then the word on the right.","Picture the object at that spot: huge, moving, absurd, touching it. Add sound or smell.","Go to the next spot. When you reach the end, tap Walk back and recall."],
+ numbers:["Read each pair of digits as its Major word. Tap Show Major words while you're still learning the code.","Place each image on the next spot of your route, in order.","Tap I'm ready, walk the route in your head, and type the digits."],
+ names:["Pick one striking feature on each face: eyebrows, glasses, chin, hair.","Turn the name into a picture (Ravi → ravioli, Grace → a swan gliding).","Stick that picture onto the feature. Then tap I'm ready."],
+ major:["Each digit is a consonant sound: 0 = s, 1 = t, 2 = n, and so on.","Tap the matching word or number.","Right answers come back after longer gaps; misses come back tomorrow."]};
+function coach(m){const n=(S.plays&&S.plays[m])||0,li=COACH[m].map(x=>'<li>'+x+'</li>').join("");
+  return n<3?'<div class="coach"><span class="label">How to play</span><ol>'+li+'</ol></div>':'<details class="more tip"><summary>How to play</summary><ol class="small">'+li+'</ol></details>'}
+function stepper(mode,phase){const L=mode==="major"?["Answer","Score"]:mode==="echo"?["Recall","Score"]:["Memorize","Recall","Score"];
+  const cur=phase==="result"?L.length-1:(phase==="recall"&&L.length===3)?1:0;
+  return '<ol class="stepper" aria-label="Progress in this game">'+L.map((l,i)=>'<li class="'+(i<cur?"past":i===cur?"now":"")+'"'+(i===cur?' aria-current="step"':'')+'>'+l+'</li>').join("")+'</ol>'}
+function head(title,sub){return stepper(G.mode,G.phase)+'<div class="gamehead"><div class="stack" style="gap:2px"><span class="label">'+title+'</span><h2>'+sub+'</h2></div><div class="row"><span id="timer" class="timer">'+(G?fmt(Date.now()-G.t0):"")+'</span><button class="btn ghost" data-act="quit">Quit</button></div></div>'}
 function locus(i){return S.loci[i]||("Spot "+(i+1))}
 function renderGame(){const g=G;
   if(g.phase==="result")return g.html;
   if(g.mode==="numbers"){
     if(g.phase==="study"){let cells="";for(let i=0;i<g.n;i+=2){const p=g.digits.slice(i,i+2);cells+='<div class="pair"><b>'+p+'</b>'+(g.hints&&p.length===2?'<span>'+MAJOR[p]+'</span>':"")+'</div>'}
-      return '<div class="stack-lg">'+head("Numbers · memorize",g.n+" digits")+'<p class="muted small">Read each pair as its Major image and drop the images on your palace route in order. Take as long as you need; the clock is only for your own record.</p><div class="digits">'+cells+'</div><div class="row"><button class="btn" data-act="hints">'+(g.hints?"Hide":"Show")+' Major words</button><span class="small muted">'+(g.used?"Hints used: half points":"Hints halve the score")+'</span></div><button class="btn primary block" data-act="recall">I\'m ready to recall</button></div>'}
+      return '<div class="stack-lg">'+head("Numbers · memorize",g.n+" digits")+''+coach("numbers")+'<div class="digits">'+cells+'</div><div class="row"><button class="btn" data-act="hints">'+(g.hints?"Hide":"Show")+' Major words</button><span class="small muted">'+(g.used?"Hints used: half points":"Hints halve the score")+'</span></div><button class="btn primary block" data-act="recall">I\'m ready to recall</button></div>'}
     return '<div class="stack-lg">'+head("Numbers · recall",g.n+" digits")+'<label class="stack" for="numIn"><span class="muted small">Type the digits in order. Spaces are ignored.</span><input type="text" id="numIn" inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:1.4rem;letter-spacing:.1em"></label><span id="numCount" class="small muted num">0 / '+g.n+'</span><button class="btn primary block" data-act="submit">Check</button></div>'}
   if(g.mode==="words"||g.mode==="echo"){
-    if(g.phase==="study")return '<div class="stack-lg">'+head("Word palace · memorize",g.n+" words")+'<p class="muted small">Walk your route. At each spot, picture the object there: huge, moving, absurd, touching the spot. Use smell and sound.</p><div class="list">'+g.items.map((w,i)=>'<div class="li"><span class="n">'+(i+1)+'</span><span class="loc">'+esc(locus(i))+'</span><span class="w">'+w+'</span></div>').join("")+'</div><button class="btn primary block" data-act="recall">Walk back and recall</button></div>';
+    if(g.phase==="study")return '<div class="stack-lg">'+head("Word palace · memorize",g.n+" words")+''+coach("words")+'<div class="list">'+g.items.map((w,i)=>'<div class="li"><span class="n">'+(i+1)+'</span><span class="loc">'+esc(locus(i))+'</span><span class="w">'+w+'</span></div>').join("")+'</div><button class="btn primary block" data-act="recall">Walk back and recall</button></div>';
     return '<div class="stack-lg">'+head(g.mode==="echo"?"Echo recall · double points":"Word palace · recall",g.n+" words")+'<p class="muted small">Go to each spot and see what is there. Leave a blank if it is empty.</p><div class="stack">'+g.items.map((w,i)=>'<div class="ri"><span class="lab">'+esc(locus(i))+'</span><span class="num muted">'+(i+1)+'</span><input type="text" id="w'+i+'" data-i="'+i+'" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="next" aria-label="Word at '+esc(locus(i))+'"></div>').join("")+'</div><button class="btn primary block" data-act="submit">Check</button></div>'}
   if(g.mode==="names"){
-    if(g.phase==="study")return '<div class="stack-lg">'+head("Names · memorize",g.n+" people")+'<p class="muted small">Pick one striking feature per face, turn the name into an image (Ravi → ravioli), and stick the image on that feature. The job is a free extra hook.</p><div class="faces">'+g.people.map(p=>'<div class="person">'+face(p.seed)+'<b>'+p.name+'</b><span class="small muted">'+p.job+'</span></div>').join("")+'</div><button class="btn primary block" data-act="recall">I\'m ready</button></div>';
+    if(g.phase==="study")return '<div class="stack-lg">'+head("Names · memorize",g.n+" people")+''+coach("names")+'<div class="faces">'+g.people.map(p=>'<div class="person">'+face(p.seed)+'<b>'+p.name+'</b><span class="small muted">'+p.job+'</span></div>').join("")+'</div><button class="btn primary block" data-act="recall">I\'m ready</button></div>';
     if(!g.order)g.order=shuffle(g.people.map((_,i)=>i));
     return '<div class="stack-lg">'+head("Names · recall",g.n+" people")+'<p class="muted small">New order. Who is who?</p><div class="faces">'+g.order.map((pi,j)=>'<div class="person">'+face(g.people[pi].seed)+'<input type="text" id="w'+j+'" autocomplete="off" spellcheck="false" enterkeyhint="next" aria-label="Name for person '+(j+1)+'"></div>').join("")+'</div><button class="btn primary block" data-act="submit">Check</button></div>'}
   if(g.mode==="major"){const c=g.cur,k=c.k;const prompt=c.dir===0?'<div class="big-prompt">'+k+'</div>':'<div class="big-prompt word">'+MAJOR[k]+'</div>';
     const opts=c.opts.map(o=>{let cls="opt"+(c.dir===1?" mono":"");if(c.picked){if(o===k)cls+=" right";else if(o===c.picked)cls+=" wrong"}return '<button class="'+cls+'" data-act="pick" data-o="'+o+'"'+(c.picked?" disabled":"")+'>'+(c.dir===0?MAJOR[o]:o)+'</button>'}).join("");
     let fb="";if(c.picked&&c.picked!==k)fb='<div class="card stack"><p><b class="num" style="font-family:var(--mono)">'+k+'</b> = <b>'+MAJOR[k]+'</b></p><p class="small muted">'+k[0]+' → '+SOUNDS[+k[0]]+' · '+k[1]+' → '+SOUNDS[+k[1]]+'. Only consonant sounds count; vowels and w, h, y are free.</p><button class="btn primary block" data-act="next">Next</button></div>';
-    return '<div class="stack-lg">'+head("Major drill"+(g.practice?" · extra practice":""),"Card "+(g.i+1)+" of "+g.q.length)+'<div class="row between"><span class="small muted">'+(c.isNew?"New card":"Box "+S.major[k].box)+' · '+(c.dir===0?"digits → word":"word → digits")+'</span><span class="combo">'+(g.combo>1?"Combo ×"+g.combo:"")+'</span></div>'+prompt+'<div class="opts">'+opts+'</div>'+fb+'<button class="btn ghost small" data-act="go" data-v="code">See the full code</button></div>'}
+    return '<div class="stack-lg">'+head("Major drill"+(g.practice?" · extra practice":""),"Card "+(g.i+1)+" of "+g.q.length)+(g.i===0?coach("major"):"")+'<div class="row between"><span class="small muted">'+(c.isNew?"New card":"Box "+S.major[k].box)+' · '+(c.dir===0?"digits → word":"word → digits")+'</span><span class="combo">'+(g.combo>1?"Combo ×"+g.combo:"")+'</span></div>'+prompt+'<div class="opts">'+opts+'</div>'+fb+'<button class="btn ghost small" data-act="go" data-v="code">See the full code</button></div>'}
   return "";
 }
 function afterGame(){
@@ -381,7 +439,8 @@ function showResult(mode,r){stopTimer();const out=finish(mode,r);const acc=Math.
   let banners="";if(out.levelUp)banners+='<div class="banner lvl pop">Level '+out.levelUp.L+' reached · '+out.levelUp.rank+'</div>';
   if(out.bonus)banners+='<div class="banner badge pop">Daily set complete · +50 XP</div>';
   out.fresh.forEach(b=>banners+='<div class="banner badge pop">Badge earned: '+b[1]+' · '+b[2]+'</div>');
-  G={mode,phase:"result",html:'<div class="stack-lg"><div class="stack" style="gap:4px"><span class="label">'+MODES[mode]+' · '+fmt(r.ms)+'</span><div class="row" style="align-items:baseline;gap:14px"><span class="score num pop">+'+r.score+'</span><span class="muted">XP</span></div><p class="num"><b>'+r.correct+' / '+r.total+'</b> correct · '+acc+'%'+(r.perfect?' · perfect round':'')+'</p></div>'+banners+'<p class="muted">'+r.adapt+'</p>'+r.detail+'<div class="row"><button class="btn primary" data-act="start" data-m="'+(mode==="echo"?"words":mode)+'">'+(mode==="echo"?"New word palace":"Go again")+'</button><button class="btn" data-act="go" data-v="train">Back to training</button></div></div>'};
+  const nu=nextUp();
+  G={mode,phase:"result",html:'<div class="stack-lg">'+stepper(mode,"result")+'<div class="stack" style="gap:4px"><span class="label">'+MODES[mode]+' · '+fmt(r.ms)+'</span><div class="row" style="align-items:baseline;gap:14px"><span class="score num pop">+'+r.score+'</span><span class="muted">XP</span></div><p class="num"><b>'+r.correct+' / '+r.total+'</b> correct · '+acc+'%'+(r.perfect?' · perfect round':'')+'</p></div>'+banners+'<p class="muted">'+r.adapt+'</p><div class="stack"><button class="btn primary block" '+nu.act+'>'+(nu.done?nu.btn:"Next: "+nu.title)+' →</button><div class="row"><button class="btn" data-act="start" data-m="'+(mode==="echo"?"words":mode)+'">'+(mode==="echo"?"New word palace":"Same game again")+'</button><button class="btn ghost" data-act="go" data-v="train">Home</button></div></div><h3>Your answers</h3>'+r.detail+'</div>'};
   render();window.scrollTo(0,0);
 }
 
@@ -418,7 +477,7 @@ function fillBackup(){const e=$("#exp");if(e)e.value=btoa(unescape(encodeURIComp
 /* ---------- palace ---------- */
 function palace(){return '<div class="stack-lg"><h1>Your palace</h1>'+
   '<p class="muted">The method of loci works because spatial memory is strong and automatic. Your route is the shelf; the images are what you store.</p>'+
-  (S.lociExample?'<div class="echo small"><b>This is an example route.</b> Replace it with spots from a place you know well: your home, office, or a walk you take daily.</div>':"")+
+  (S.lociExample?'<div class="echo stack small"><p><b>This is an example route.</b> Replace it with spots from a place you know well: your home, office, or a walk you take daily. Edit the list below, then tap Save route.</p><button class="btn" data-act="keepex">Use the example for now</button></div>':"")+
   '<section class="card stack"><label for="loci" class="label">Spots in walking order, one per line</label><textarea id="loci" style="min-height:300px">'+esc(S.loci.join("\n"))+'</textarea><div class="row between"><span class="small muted num" id="lociCount">'+S.loci.length+' spots</span><button class="btn primary" data-act="saveloci">Save route</button></div></section>'+
   '<section class="card stack"><h3>Building a good route</h3><ul class="small" style="margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px">'+
    '<li>Walk it in one direction and never cross back. Order is what lets you recall a list in sequence.</li>'+
@@ -438,7 +497,7 @@ function method(){const c=(t,b,src,url)=>'<section class="card method"><h3>'+t+'
   c("Names and faces","Names are hard because they carry no meaning. The fix is elaborative encoding: turn the name into a concrete image and attach it to a distinctive feature of the face, then test yourself. The same imagery and retrieval principles apply.","Applied from the loci and retrieval research above","")+
   c("What to expect","Generic brain-training games show little transfer to everyday memory. The gains here come from strategies, so use them on real material: phone numbers, names at meetings, talk outlines, shopping lists. That is where the skill becomes yours.","Simons et al., 2016, Psychological Science in the Public Interest","https://doi.org/10.1177/1529100616661983")+
   '<section class="card stack"><h3>The Major System</h3><p class="small">Each digit is a consonant sound. Vowels and w, h, y are fillers. Two digits make one image.</p><div class="sounds">'+SOUNDS.map((s,i)=>'<div><b>'+i+'</b>'+s+'</div>').join("")+'</div><button class="btn" data-act="go" data-v="code">See all 100 images</button></section>'+
-  '<section class="card stack"><h3>A weekly rhythm</h3><p class="small">Daily: Major drill (5 min), one Word palace round, one Numbers round, one Names round. That is the daily set and roughly the 30-minute dose from the Neuron study. Come back after 10 minutes or more for Echo recall.</p></section></div>'}
+  '<button class="btn" data-act="replayintro">Replay the welcome guide</button><section class="card stack"><h3>A weekly rhythm</h3><p class="small">Daily: Major drill (5 min), one Word palace round, one Numbers round, one Names round. That is the daily set and roughly the 30-minute dose from the Neuron study. Come back after 10 minutes or more for Echo recall.</p></section></div>'}
 function codeTable(){return '<div class="stack-lg"><div class="row between"><h1>The 00–99 code</h1><button class="btn ghost" data-act="go" data-v="'+(G?"train":"method")+'">Back</button></div><div class="sounds">'+SOUNDS.map((s,i)=>'<div><b>'+i+'</b>'+s+'</div>').join("")+'</div><div class="code">'+Object.keys(MAJOR).map(k=>'<div><b>'+k+'</b>'+MAJOR[k]+'</div>').join("")+'</div></div>'}
 
 /* ---------- events ---------- */
@@ -452,7 +511,10 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
   else if(a==="submit")submit();
   else if(a==="pick")pick(b.dataset.o);
   else if(a==="next")next();
-  else if(a==="saveloci"){const v=$("#loci").value.split("\n").map(s=>s.trim()).filter(Boolean);if(v.length<5){toast("Add at least 5 spots to your route");return}S.loci=v.slice(0,200);S.lociExample=false;save();toast("Route saved · "+S.loci.length+" spots");render()}
+  else if(a==="saveloci"){const v=$("#loci").value.split("\n").map(s=>s.trim()).filter(Boolean);if(v.length<5){toast("Add at least 5 spots to your route");return}S.loci=v.slice(0,200);S.lociExample=false;save();toast("Route saved · "+S.loci.length+" spots");go("train")}
+  else if(a==="keepex"){S.lociExample=false;save();toast("Using the example route. Change it anytime in Palace");go("train")}
+  else if(a==="introdone"){S.seenIntro=true;save();render();window.scrollTo(0,0)}
+  else if(a==="replayintro"){S.seenIntro=false;save();go("train")}
   else if(a==="copy"){const t=$("#exp");const done=()=>toast("Backup code copied");try{navigator.clipboard.writeText(t.value).then(done,()=>{t.select();toast("Selected. Copy it manually")})}catch(err){t.select();toast("Selected. Copy it manually")}}
   else if(a==="import"){const raw=($("#imp").value||"").trim();if(!raw){toast("Paste a backup code first");return}
     try{const o=JSON.parse(decodeURIComponent(escape(atob(raw))));if(typeof o.xp!=="number")throw 0;S=Object.assign(defaults(),o);save();toast("Progress restored");render()}catch(err){toast("That code didn't work. Copy the whole code and try again")}}
