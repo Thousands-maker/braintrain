@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Memory training game: method of loci, Major System, names and faces, spaced repetition.">
+<title>BrainTrain</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500;700&family=Young+Serif&display=swap">
+<style>
+/* Layout: single-column training hall, max 640px, cards per discipline, fixed bottom tab bar */
+:root{
+  --bg:#ECEFF4; --surface:#FFFFFF; --sunk:#E2E6EE; --ink:#1A1F36; --muted:#5B6280; --line:#D3D8E4;
+  --accent:#0E6B66; --accent-ink:#FFFFFF; --accent-soft:#D5ECE9;
+  --brass:#B07A12; --brass-soft:#F5E6C4;
+  --good:#1D7F48; --good-soft:#D8F0E2; --bad:#B8362F; --bad-soft:#F8DEDB;
+  --display:"Young Serif", Georgia, "Times New Roman", serif;
+  --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10131C; --surface:#191D2A; --sunk:#232838; --ink:#E8EAF2; --muted:#9BA2BC; --line:#2D3348;
+  --accent:#4CC3B8; --accent-ink:#06201E; --accent-soft:#16373A;
+  --brass:#E6B34E; --brass-soft:#3A3020;
+  --good:#5ACB88; --good-soft:#18352A; --bad:#F27C72; --bad-soft:#3E2124; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10131C; --surface:#191D2A; --sunk:#232838; --ink:#E8EAF2; --muted:#9BA2BC; --line:#2D3348;
+  --accent:#4CC3B8; --accent-ink:#06201E; --accent-soft:#16373A;
+  --brass:#E6B34E; --brass-soft:#3A3020;
+  --good:#5ACB88; --good-soft:#18352A; --bad:#F27C72; --bad-soft:#3E2124; color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-block:env(safe-area-inset-top,0px) env(safe-area-inset-bottom,0px)}
+body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%}
+.wrap{max-width:640px;margin:0 auto;padding-inline:16px;padding-block:14px calc(96px + env(safe-area-inset-bottom,0px))}
+h1,h2,h3{font-family:var(--display);font-weight:400;line-height:1.2;text-wrap:balance;margin:0}
+h1{font-size:1.7rem} h2{font-size:1.35rem} h3{font-size:1.1rem}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+.label{font-size:.72rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.stack{display:flex;flex-direction:column;gap:12px}
+.stack-lg{display:flex;flex-direction:column;gap:22px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.num{font-variant-numeric:tabular-nums}
+a{color:var(--accent)}
+button{font:inherit;color:inherit;cursor:pointer}
+.btn{min-height:46px;padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.block{width:100%}
+.btn:focus-visible,input:focus-visible,textarea:focus-visible,.tab:focus-visible,.disc:focus-visible,.opt:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.btn:disabled{opacity:.5;cursor:default}
+input[type=text],textarea{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:46px}
+textarea{min-height:120px;resize:vertical}
+/* top bar */
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px}
+.brand{font-family:var(--display);font-size:1.15rem}
+.save-pill{font-size:.75rem;padding:4px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:700;white-space:nowrap}
+.save-pill.warn{background:var(--bad-soft);color:var(--bad)}
+/* hero */
+.hero{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center}
+.rank{font-family:var(--display);font-size:1.6rem;line-height:1.1}
+.bar{height:10px;border-radius:99px;background:var(--sunk);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--brass);border-radius:99px;transition:width .6s ease}
+.ring{width:92px;height:92px;flex:none}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{background:var(--sunk);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-family:var(--mono);font-size:1.15rem}
+/* daily set */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:.82rem;padding:5px 11px;border-radius:99px;border:1px solid var(--line);color:var(--muted);font-weight:700}
+.chip.done{background:var(--good-soft);border-color:transparent;color:var(--good)}
+/* disciplines */
+.discs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.discs{grid-template-columns:1fr}}
+.disc{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.disc:hover{border-color:var(--accent)}
+.disc .glyph{font-family:var(--mono);font-size:.85rem;color:var(--accent);font-weight:700}
+.disc .meta{display:flex;justify-content:space-between;gap:8px;font-size:.82rem;color:var(--muted)}
+.echo{background:var(--brass-soft);border:1px solid var(--brass);border-radius:var(--r);padding:14px}
+/* game */
+.gamehead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.timer{font-family:var(--mono);font-size:1rem;color:var(--muted)}
+.digits{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px}
+.pair{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 4px;text-align:center}
+.pair b{display:block;font-family:var(--mono);font-size:1.6rem;letter-spacing:.06em}
+.pair span{font-size:.75rem;color:var(--brass);font-weight:700}
+.list{display:flex;flex-direction:column;gap:6px}
+.li{display:grid;grid-template-columns:2.2em minmax(0,1fr) minmax(0,1.3fr);gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.li .n{font-family:var(--mono);color:var(--muted);font-size:.85rem}
+.li .loc{color:var(--muted);font-size:.85rem;overflow-wrap:anywhere}
+.li .w{font-weight:700;font-size:1.05rem;text-transform:uppercase;letter-spacing:.04em;overflow-wrap:anywhere}
+.ri{display:grid;grid-template-columns:2.2em minmax(0,1fr);gap:8px;align-items:center}
+.ri .lab{grid-column:2;font-size:.78rem;color:var(--muted);margin-bottom:-4px}
+.faces{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.person{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.person svg{width:100%;height:auto;border-radius:10px;display:block}
+.person b{font-size:1.05rem}
+.big-prompt{font-family:var(--mono);font-size:3rem;text-align:center;padding:18px 0 6px;font-weight:700}
+.big-prompt.word{font-family:var(--display);font-size:2.4rem;font-weight:400}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{min-height:58px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:1.05rem}
+.opt.mono{font-family:var(--mono);font-size:1.3rem}
+.opt.right{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.combo{font-family:var(--mono);color:var(--brass);font-weight:700}
+.diff{display:flex;flex-wrap:wrap;gap:3px;font-family:var(--mono);font-size:1.15rem}
+.diff span{display:inline-flex;flex-direction:column;align-items:center;min-width:1.25em;border-radius:5px;padding:2px 1px}
+.diff .ok{background:var(--good-soft);color:var(--good)}
+.diff .no{background:var(--bad-soft);color:var(--bad)}
+.diff small{font-size:.65rem;opacity:.9}
+.mark-ok{color:var(--good);font-weight:700}.mark-no{color:var(--bad);font-weight:700}
+/* result */
+.score{font-family:var(--display);font-size:3.4rem;line-height:1;color:var(--brass)}
+.banner{border-radius:12px;padding:12px 14px;font-weight:700}
+.banner.lvl{background:var(--accent-soft);color:var(--accent)}
+.banner.badge{background:var(--brass-soft);color:var(--ink)}
+/* progress */
+.bests{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.best b{font-family:var(--mono);font-size:1.5rem;display:block}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.bdg{border:1px dashed var(--line);border-radius:12px;padding:10px;font-size:.85rem;color:var(--muted)}
+.bdg b{display:block;color:var(--muted)}
+.bdg.on{border:1px solid var(--brass);background:var(--brass-soft);color:var(--ink)}
+.bdg.on b{color:var(--ink)}
+.hist{display:flex;flex-direction:column}
+.hist div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.boxes{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;text-align:center}
+.boxes div{background:var(--sunk);border-radius:8px;padding:6px 2px;font-size:.75rem;color:var(--muted)}
+.boxes b{display:block;font-family:var(--mono);font-size:1.05rem;color:var(--ink)}
+.chart{width:100%;height:auto;display:block}
+/* table */
+.tablewrap{overflow-x:auto}
+.code{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.code div{background:var(--sunk);border-radius:8px;padding:6px;font-size:.82rem;text-align:center}
+.code b{font-family:var(--mono);display:block}
+.sounds{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.sounds div{background:var(--accent-soft);border-radius:8px;padding:6px;text-align:center;font-size:.85rem}
+.sounds b{font-family:var(--mono);display:block;font-size:1.1rem;color:var(--accent)}
+.method h3{margin-bottom:6px}
+.method .src{font-size:.82rem;color:var(--muted);margin-top:8px}
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;z-index:5}
+.nav-in{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:100%;max-width:640px}
+.tab{background:none;border:none;border-radius:10px;padding:8px 2px;font-size:.78rem;font-weight:700;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;min-height:50px}
+.tab svg{width:22px;height:22px}
+.tab[aria-current="page"]{color:var(--accent);background:var(--accent-soft)}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;font-size:.9rem;z-index:9;max-width:calc(100% - 32px)}
+@keyframes pop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
+.pop{animation:pop .35s ease-out}
+@media (prefers-reduced-motion:reduce){.pop{animation:none}.bar>i{transition:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span class="brand">BrainTrain</span>
+    <span id="savePill" class="save-pill">Saved on this device</span>
+  </div>
+  <main id="main"></main>
+</div>
+<nav class="nav" aria-label="Sections"><div class="nav-in" id="nav"></div></nav>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(function(){
+"use strict";
+const KEY='loci-gym-v1';
+const MAJOR={"00":"sauce","01":"suit","02":"sun","03":"sumo","04":"sir","05":"seal","06":"sash","07":"sock","08":"sofa","09":"soap","10":"toes","11":"tot","12":"tin","13":"tomb","14":"tire","15":"towel","16":"dish","17":"duck","18":"dove","19":"tub","20":"nose","21":"net","22":"nun","23":"gnome","24":"Nero","25":"nail","26":"notch","27":"neck","28":"knife","29":"knob","30":"mouse","31":"mat","32":"moon","33":"mummy","34":"mower","35":"mule","36":"match","37":"mug","38":"movie","39":"map","40":"rose","41":"rat","42":"rain","43":"ram","44":"rower","45":"roll","46":"roach","47":"rock","48":"roof","49":"rope","50":"lace","51":"light","52":"lion","53":"lamb","54":"lure","55":"lily","56":"leash","57":"log","58":"lava","59":"lip","60":"cheese","61":"sheet","62":"chain","63":"jam","64":"chair","65":"jail","66":"judge","67":"chalk","68":"chef","69":"ship","70":"case","71":"cat","72":"coin","73":"comb","74":"car","75":"coal","76":"cash","77":"cake","78":"cave","79":"cup","80":"face","81":"foot","82":"phone","83":"foam","84":"fire","85":"file","86":"fish","87":"fog","88":"fife","89":"fob","90":"bus","91":"bat","92":"pen","93":"bomb","94":"bear","95":"bell","96":"beach","97":"book","98":"beef","99":"pipe"};
+const SOUNDS=["s, z","t, d","n","m","r","l","j, sh, ch","k, hard g","f, v","p, b"];
+const WORDS="apple anchor balloon banana barrel basket bell bicycle blanket boot bottle bracelet bridge broom bucket butterfly cactus camel candle canoe carrot castle chainsaw cherry chimney clock cloud coconut compass crab crown crystal cushion dagger diamond dolphin donkey dragon drum eagle egg elephant envelope feather fence flag flamingo flute fork fountain frog giraffe glove goat guitar hammer hammock harp helmet honey horse igloo iron jellyfish kangaroo kettle key kite ladder lantern lemon lighthouse lobster magnet mango microscope mirror monkey mushroom necklace needle octopus onion orchid ostrich owl paintbrush panda parachute parrot peacock pearl pencil penguin piano pillow pineapple pirate pizza pumpkin puppet pyramid rabbit rainbow robot rocket saddle scissors scorpion shark shovel skateboard snail snowman spider sponge statue strawberry submarine suitcase sunflower sword telescope tent tiger tomato tornado tractor trumpet turtle umbrella unicorn vase violin volcano waffle walrus watermelon whale whistle windmill wizard yacht zebra zipper durian kayak trophy lollipop bulldozer accordion hourglass chandelier".split(" ");
+const NAMES=["Aisha","Arjun","Bao","Benjamin","Camila","Chloe","Daniel","Darius","Elena","Farah","Gabriel","Hafiz","Hana","Ivan","Jasmine","Jun Hao","Kavya","Kenji","Leila","Marcus","Mei Ling","Nadia","Nathan","Nurul","Oscar","Priya","Rafael","Ravi","Rosa","Samuel","Sakura","Siti","Tariq","Thomas","Uma","Victor","Wei Jie","Xin Yi","Yusuf","Zara","Grace","Hiroshi","Ingrid","Kofi","Lucas","Maya","Omar","Sofia","Tenzin","Vera","Amir","Bianca","Cedric","Dewi","Felix","Gita","Imran","Joelle","Kiran","Lorenzo"];
+const JOBS=["baker","pilot","dentist","florist","architect","nurse","chef","lawyer","teacher","firefighter","photographer","plumber","violinist","gardener","librarian","surgeon","mechanic","journalist","tailor","beekeeper","astronaut","barista","DJ","potter","sailor"];
+const DEFAULT_LOCI=["Front door","Shoe rack","Umbrella stand","Sofa","Coffee table","TV","Bookshelf","Dining table","Fridge","Stove","Kitchen sink","Rice cooker","Washing machine","Bathroom mirror","Shower","Bed","Wardrobe","Desk","Window","Balcony"];
+const INTERVAL=[0,0,1,3,7,16]; // days by Leitner box 1..5
+const RANKS=["Novice","Apprentice","Keeper of Rooms","Palace Builder","Architect","Mnemonist","Grandmaster"];
+const MODES={numbers:"Numbers",words:"Word palace",names:"Names & faces",major:"Major drill",echo:"Echo recall"};
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const z=n=>String(n).padStart(2,"0");
+function today(d){d=d||new Date();return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate())}
+function addDays(ds,n){const p=ds.split("-").map(Number);return today(new Date(p[0],p[1]-1,p[2]+n))}
+const rnd=n=>Math.floor(Math.random()*n);
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+const sample=(a,n)=>shuffle(a).slice(0,n);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+function defaults(){return {v:1,xp:0,days:{},best:{numbers:0,words:0,names:0},lvl:{numbers:6,words:8,names:4},sessions:[],loci:DEFAULT_LOCI.slice(),lociExample:true,major:{},badges:[],echo:null,flags:{},daily:{date:today(),done:[]}}}
+let storageOK=true;
+function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);const d=defaults();return Object.assign(d,o,{best:Object.assign(d.best,o.best),lvl:Object.assign(d.lvl,o.lvl),flags:Object.assign({},o.flags)})}}catch(e){storageOK=false}return defaults()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));storageOK=true}catch(e){storageOK=false}pill()}
+function pill(){const p=$("#savePill");p.textContent=storageOK?"Saved on this device":"Not saving here, use a backup code";p.classList.toggle("warn",!storageOK)}
+let S=load();
+
+function ensureDaily(){if(!S.daily||S.daily.date!==today())S.daily={date:today(),done:[]}}
+function lvlInfo(xp){let L=1;while(50*L*(L+1)<=xp)L++;const lo=50*(L-1)*L,hi=50*L*(L+1);return{L,lo,hi,pct:(xp-lo)/(hi-lo),rank:RANKS[Math.min(RANKS.length-1,Math.floor((L-1)/4))]}}
+function streak(){let d=today();if(S.days[d]===undefined)d=addDays(d,-1);let n=0;while(S.days[d]!==undefined){n++;d=addDays(d,-1)}return n}
+function majorStats(){const b=[0,0,0,0,0,0];for(const k in MAJOR){const c=S.major[k];b[c?c.box:0]++}return b}
+function majorDue(){const t=today();return Object.keys(MAJOR).filter(k=>S.major[k]&&S.major[k].due<=t)}
+
+const BADGES=[
+ ["first","First rep","Finish any session",()=>S.sessions.length>0],
+ ["streak3","Three in a row","3-day streak",()=>streak()>=3],
+ ["streak7","Full week","7-day streak",()=>streak()>=7],
+ ["streak30","Habit formed","30-day streak",()=>streak()>=30],
+ ["num12","Phone number","12 digits, no errors",()=>S.best.numbers>=12],
+ ["num24","Card number+","24 digits, no errors",()=>S.best.numbers>=24],
+ ["num40","Championship row","40 digits, no errors",()=>S.best.numbers>=40],
+ ["w15","Room filled","15 words recalled",()=>S.best.words>=15],
+ ["w30","Whole house","30 words recalled",()=>S.best.words>=30],
+ ["n8","Good with names","8 names in a round",()=>S.best.names>=8],
+ ["n15","Party host","15 names in a round",()=>S.best.names>=15],
+ ["m25","Code breaker","25 Major cards in box 3+",()=>majorStats().slice(3).reduce((a,b)=>a+b,0)>=25],
+ ["m100","Fluent in digits","All 100 Major cards in box 3+",()=>majorStats().slice(3).reduce((a,b)=>a+b,0)>=100],
+ ["echo","It stuck","80%+ on an echo recall",()=>!!S.flags.echo],
+ ["full","Full circuit","Complete the daily set",()=>!!S.flags.full],
+ ["l10","Level 10","Reach level 10",()=>lvlInfo(S.xp).L>=10]
+];
+function checkBadges(){const fresh=[];for(const b of BADGES){if(!S.badges.includes(b[0])&&b[3]()){S.badges.push(b[0]);fresh.push(b)}}return fresh}
+
+function finish(mode,r){
+  ensureDaily();const before=lvlInfo(S.xp).L;const d=today();
+  S.xp+=r.score;S.days[d]=(S.days[d]||0)+r.score;
+  S.sessions.unshift({t:Date.now(),mode,score:r.score,c:r.correct,n:r.total});if(S.sessions.length>300)S.sessions.length=300;
+  let bonus=0;const set=["numbers","words","names","major"];
+  if(set.includes(mode)&&!S.daily.done.includes(mode)){S.daily.done.push(mode);if(S.daily.done.length===4){bonus=50;S.xp+=50;S.days[d]+=50;S.flags.full=true}}
+  const fresh=checkBadges();const after=lvlInfo(S.xp);save();
+  return{bonus,fresh,levelUp:after.L>before?after:null}
+}
+
+/* ---------- faces ---------- */
+function face(seed){
+  let x=seed%233280;const r=()=>{x=(x*9301+49297)%233280;return x/233280};const pick=a=>a[Math.floor(r()*a.length)];
+  const skin=pick(["#F3D3B8","#E8BC98","#CF9668","#A86E44","#7E4E2E","#5A3620"]);
+  const hair=pick(["#1E1A18","#3B2618","#6B4423","#A0662E","#D2B06E","#8E8E8E","#B5452E","#2B2F55"]);
+  const bg=pick(["#BFD7EA","#F2D0A9","#C9E4CA","#E5C1D8","#D8D2F0","#F4E1A1","#B9E3E0"]);
+  const shirt=pick(["#2F4B7C","#7A2E3A","#2E6B4F","#C9A227","#5C5C6E","#D0623A","#6A4C93"]);
+  const style=Math.floor(r()*6),glasses=r()<.32,beard=r()<.22,ear=r()<.25,rx=19+r()*5,ry=23+r()*4,mouth=2+r()*6,brow=r()*3;
+  let s='<svg viewBox="0 0 100 100" role="img" aria-label="Portrait"><rect width="100" height="100" fill="'+bg+'"/>';
+  if(style===1)s+='<rect x="'+(50-rx-5)+'" y="30" width="'+(2*rx+10)+'" height="58" rx="18" fill="'+hair+'"/>';
+  s+='<path d="M14 100 Q16 78 50 76 Q84 78 86 100Z" fill="'+shirt+'"/><rect x="43" y="62" width="14" height="16" fill="'+skin+'"/>';
+  s+='<ellipse cx="'+(50-rx)+'" cy="52" rx="3.5" ry="5" fill="'+skin+'"/><ellipse cx="'+(50+rx)+'" cy="52" rx="3.5" ry="5" fill="'+skin+'"/>';
+  s+='<ellipse cx="50" cy="50" rx="'+rx+'" ry="'+ry+'" fill="'+skin+'"/>';
+  const top='<path d="M'+(50-rx-1)+' 47 Q'+(50-rx)+' '+(50-ry-6)+' 50 '+(50-ry-4)+' Q'+(50+rx)+' '+(50-ry-6)+' '+(50+rx+1)+' 47 Q'+(50+rx-6)+' 34 50 34 Q'+(50-rx+6)+' 34 '+(50-rx-1)+' 47Z" fill="'+hair+'"/>';
+  if(style===0||style===1)s+=top;
+  if(style===2)s+=top+'<circle cx="50" cy="'+(50-ry-7)+'" r="8" fill="'+hair+'"/>';
+  if(style===3)s+='<path d="M'+(50-rx)+' 44 Q'+(50-rx)+' 38 '+(50-rx+5)+' 37 L'+(50-rx+3)+' 50Z M'+(50+rx)+' 44 Q'+(50+rx)+' 38 '+(50+rx-5)+' 37 L'+(50+rx-3)+' 50Z" fill="'+hair+'"/>';
+  if(style===4){for(let i=0;i<8;i++){const a=Math.PI+i*Math.PI/7;s+='<circle cx="'+(50+Math.cos(a)*rx).toFixed(1)+'" cy="'+(46+Math.sin(a)*(ry+1)).toFixed(1)+'" r="7" fill="'+hair+'"/>'}}
+  if(style===5)s+='<path d="M'+(50-rx-1)+' 44 Q50 '+(50-ry-12)+' '+(50+rx+1)+' 44 Q'+(50+rx-2)+' 36 '+(50+4)+' 36 Q50 42 '+(50-rx+2)+' 40Z" fill="'+hair+'"/>';
+  s+='<path d="M39 '+(43-brow)+' L45 '+(42-brow)+' M55 '+(42-brow)+' L61 '+(43-brow)+'" stroke="'+(style===3?"#5a4636":hair)+'" stroke-width="2" stroke-linecap="round"/>';
+  s+='<circle cx="42" cy="49" r="2.3" fill="#1d1d1d"/><circle cx="58" cy="49" r="2.3" fill="#1d1d1d"/>';
+  s+='<path d="M50 52 Q48 58 50 59" stroke="#00000055" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  if(beard)s+='<path d="M'+(50-rx+2)+' 54 Q'+(50-rx+4)+' '+(50+ry+3)+' 50 '+(50+ry+3)+' Q'+(50+rx-4)+' '+(50+ry+3)+' '+(50+rx-2)+' 54 Q50 64 '+(50-rx+2)+' 54Z" fill="'+hair+'" opacity=".9"/>';
+  s+='<path d="M44 '+(64)+' Q50 '+(64+mouth/1.5)+' 56 64" stroke="#7a2e2e" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  if(glasses)s+='<g stroke="#1d1d1d" stroke-width="1.6" fill="none"><circle cx="42" cy="49" r="6"/><circle cx="58" cy="49" r="6"/><path d="M48 49 L52 49"/></g>';
+  if(ear)s+='<circle cx="'+(50-rx)+'" cy="58" r="2" fill="#E2B13C"/><circle cx="'+(50+rx)+'" cy="58" r="2" fill="#E2B13C"/>';
+  return s+'</svg>';
+}
+
+/* ---------- nav ---------- */
+const ICON={
+ train:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21V10l9-6 9 6v11"/><path d="M9 21v-6h6v6"/></svg>',
+ progress:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V12M10 20V6M16 20v-9M22 20H2"/></svg>',
+ palace:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+ method:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M9 8h6"/></svg>'};
+let view="train",G=null,timerId=null;
+function nav(){$("#nav").innerHTML=[["train","Train"],["progress","Progress"],["palace","Palace"],["method","Method"]].map(t=>'<button class="tab" data-act="go" data-v="'+t[0]+'"'+(view===t[0]&&!G?' aria-current="page"':'')+'>'+ICON[t[0]]+t[1]+'</button>').join("")}
+function go(v){stopTimer();G=null;view=v;render();window.scrollTo(0,0)}
+function render(){nav();const m=$("#main");
+  if(G){m.innerHTML=renderGame();afterGame();return}
+  m.innerHTML=view==="train"?home():view==="progress"?progress():view==="palace"?palace():view==="method"?method():view==="code"?codeTable():"";
+  if(view==="progress")fillBackup();
+}
+let toastT;function toast(t){const e=$("#toast");e.textContent=t;e.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>e.hidden=true,2600)}
+
+/* ---------- home ---------- */
+function ringSVG(v,goal){const p=clamp(v/goal,0,1),R=38,C=2*Math.PI*R;return '<svg class="ring" viewBox="0 0 92 92" aria-label="Daily goal '+v+' of '+goal+' XP"><circle cx="46" cy="46" r="'+R+'" fill="none" stroke="var(--sunk)" stroke-width="9"/><circle cx="46" cy="46" r="'+R+'" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="'+(C*p)+' '+C+'" transform="rotate(-90 46 46)"/><text x="46" y="45" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="17" fill="var(--ink)">'+v+'</text><text x="46" y="61" text-anchor="middle" font-size="10" fill="var(--muted)">of '+goal+' XP</text></svg>'}
+function home(){ensureDaily();const li=lvlInfo(S.xp),st=streak(),todayXP=S.days[today()]||0,due=majorDue().length,learned=majorStats().slice(3).reduce((a,b)=>a+b,0);
+  let echo="";if(S.echo){const wait=10*60000-(Date.now()-S.echo.at);echo=wait<=0?'<div class="echo stack"><div class="label" style="color:var(--brass)">Echo recall ready · double points</div><p>Recall the '+S.echo.items.length+' words from your last palace walk. Delayed retrieval is what makes memories last.</p><button class="btn primary" data-act="start" data-m="echo">Walk the palace again</button></div>':'<div class="card small muted">Echo recall unlocks in '+Math.ceil(wait/60000)+' min. Come back to test your last word list after a delay.</div>'}
+  const disc=(m,glyph,title,desc,lvl,best)=>'<button class="disc" data-act="start" data-m="'+m+'"><span class="glyph">'+glyph+'</span><h3>'+title+'</h3><span class="small muted">'+desc+'</span><span class="meta"><span>'+lvl+'</span><span>'+best+'</span></span></button>';
+  return '<div class="stack-lg">'+
+  '<section class="card"><div class="hero"><div class="stack" style="gap:6px;min-width:0"><span class="label">Level '+li.L+'</span><span class="rank">'+li.rank+'</span><div class="bar" aria-label="Level progress"><i style="width:'+(li.pct*100).toFixed(1)+'%"></i></div><span class="small muted num">'+(S.xp-li.lo)+' / '+(li.hi-li.lo)+' XP to level '+(li.L+1)+'</span></div>'+ringSVG(todayXP,150)+'</div>'+
+  '<div class="stats3"><div class="stat"><span class="label">Streak</span><b>'+st+'d</b></div><div class="stat"><span class="label">Total XP</span><b>'+S.xp+'</b></div><div class="stat"><span class="label">Badges</span><b>'+S.badges.length+'/'+BADGES.length+'</b></div></div></section>'+
+  '<section class="stack"><div class="row between"><h2>Today\'s set</h2><span class="small muted">+50 XP for all four</span></div><div class="chips">'+["numbers","words","names","major"].map(m=>'<span class="chip'+(S.daily.done.includes(m)?" done":"")+'">'+(S.daily.done.includes(m)?"✓ ":"")+MODES[m]+'</span>').join("")+'</div></section>'+
+  echo+
+  '<section class="discs">'+
+   disc("words","LOCI","Word palace","Place words along your route, then walk it back.",S.lvl.words+" words",'Best '+S.best.words)+
+   disc("numbers","0–9","Numbers","Turn digit pairs into images and store them.",S.lvl.numbers+" digits",'Best '+S.best.numbers)+
+   disc("major","SRS","Major drill","Spaced review of the 00–99 code.",due?due+" due":"Learned "+learned+"/100",'Box 3+: '+learned)+
+   disc("names","FACE","Names & faces","Hook each name to a feature of the face.",S.lvl.names+" people",'Best '+S.best.names)+
+  '</section>'+
+  '<p class="small muted">Aim for 20–30 minutes a day. That is the dose that doubled word recall in six weeks in the Dresler 2017 study. See Method.</p>'+
+  '</div>'
+}
+
+/* ---------- games ---------- */
+function stopTimer(){if(timerId){clearInterval(timerId);timerId=null}}
+function startTimer(){stopTimer();timerId=setInterval(()=>{const e=$("#timer");if(e&&G)e.textContent=fmt(Date.now()-G.t0)},200)}
+const fmt=ms=>{const s=Math.floor(ms/1000);return Math.floor(s/60)+":"+z(s%60)};
+function start(m){stopTimer();
+  if(m==="numbers"){const n=S.lvl.numbers;let d="";for(let i=0;i<n;i++)d+=rnd(10);G={mode:m,phase:"study",n,digits:d,hints:false,used:false,t0:Date.now()}}
+  if(m==="words"){const n=S.lvl.words;G={mode:m,phase:"study",n,items:sample(WORDS,n),t0:Date.now()}}
+  if(m==="echo"){G={mode:m,phase:"recall",n:S.echo.items.length,items:S.echo.items,t0:Date.now()}}
+  if(m==="names"){const n=S.lvl.names;const nm=sample(NAMES,n),jb=sample(JOBS.concat(JOBS),n);G={mode:m,phase:"study",n,people:nm.map((x,i)=>({name:x,job:jb[i],seed:rnd(200000)+1})),t0:Date.now()}}
+  if(m==="major"){const due=majorDue().sort((a,b)=>S.major[a].box-S.major[b].box).slice(0,15);const fresh=Object.keys(MAJOR).filter(k=>!S.major[k]).slice(0,due.length<10?6:2);let q=shuffle(due.concat(fresh));let practice=false;if(!q.length){q=sample(Object.keys(MAJOR).filter(k=>S.major[k]),10);practice=true}
+    if(!q.length)q=Object.keys(MAJOR).slice(0,6);
+    G={mode:m,phase:"q",q,i:0,combo:0,correct:0,score:0,practice,t0:Date.now(),missed:[]};newQ()}
+  view="train";render();window.scrollTo(0,0);
+}
+function newQ(){const k=G.q[G.i];const dir=rnd(2);const others=sample(Object.keys(MAJOR).filter(x=>x!==k),3);G.cur={k,dir,opts:shuffle([k].concat(others)),picked:null,isNew:!S.major[k]}}
+function head(title,sub){return '<div class="gamehead"><div class="stack" style="gap:2px"><span class="label">'+title+'</span><h2>'+sub+'</h2></div><div class="row"><span id="timer" class="timer">'+(G?fmt(Date.now()-G.t0):"")+'</span><button class="btn ghost" data-act="quit">Quit</button></div></div>'}
+function locus(i){return S.loci[i]||("Spot "+(i+1))}
+function renderGame(){const g=G;
+  if(g.phase==="result")return g.html;
+  if(g.mode==="numbers"){
+    if(g.phase==="study"){let cells="";for(let i=0;i<g.n;i+=2){const p=g.digits.slice(i,i+2);cells+='<div class="pair"><b>'+p+'</b>'+(g.hints&&p.length===2?'<span>'+MAJOR[p]+'</span>':"")+'</div>'}
+      return '<div class="stack-lg">'+head("Numbers · memorize",g.n+" digits")+'<p class="muted small">Read each pair as its Major image and drop the images on your palace route in order. Take as long as you need; the clock is only for your own record.</p><div class="digits">'+cells+'</div><div class="row"><button class="btn" data-act="hints">'+(g.hints?"Hide":"Show")+' Major words</button><span class="small muted">'+(g.used?"Hints used: half points":"Hints halve the score")+'</span></div><button class="btn primary block" data-act="recall">I\'m ready to recall</button></div>'}
+    return '<div class="stack-lg">'+head("Numbers · recall",g.n+" digits")+'<label class="stack" for="numIn"><span class="muted small">Type the digits in order. Spaces are ignored.</span><input type="text" id="numIn" inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:1.4rem;letter-spacing:.1em"></label><span id="numCount" class="small muted num">0 / '+g.n+'</span><button class="btn primary block" data-act="submit">Check</button></div>'}
+  if(g.mode==="words"||g.mode==="echo"){
+    if(g.phase==="study")return '<div class="stack-lg">'+head("Word palace · memorize",g.n+" words")+'<p class="muted small">Walk your route. At each spot, picture the object there: huge, moving, absurd, touching the spot. Use smell and sound.</p><div class="list">'+g.items.map((w,i)=>'<div class="li"><span class="n">'+(i+1)+'</span><span class="loc">'+esc(locus(i))+'</span><span class="w">'+w+'</span></div>').join("")+'</div><button class="btn primary block" data-act="recall">Walk back and recall</button></div>';
+    return '<div class="stack-lg">'+head(g.mode==="echo"?"Echo recall · double points":"Word palace · recall",g.n+" words")+'<p class="muted small">Go to each spot and see what is there. Leave a blank if it is empty.</p><div class="stack">'+g.items.map((w,i)=>'<div class="ri"><span class="lab">'+esc(locus(i))+'</span><span class="num muted">'+(i+1)+'</span><input type="text" id="w'+i+'" data-i="'+i+'" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="next" aria-label="Word at '+esc(locus(i))+'"></div>').join("")+'</div><button class="btn primary block" data-act="submit">Check</button></div>'}
+  if(g.mode==="names"){
+    if(g.phase==="study")return '<div class="stack-lg">'+head("Names · memorize",g.n+" people")+'<p class="muted small">Pick one striking feature per face, turn the name into an image (Ravi → ravioli), and stick the image on that feature. The job is a free extra hook.</p><div class="faces">'+g.people.map(p=>'<div class="person">'+face(p.seed)+'<b>'+p.name+'</b><span class="small muted">'+p.job+'</span></div>').join("")+'</div><button class="btn primary block" data-act="recall">I\'m ready</button></div>';
+    if(!g.order)g.order=shuffle(g.people.map((_,i)=>i));
+    return '<div class="stack-lg">'+head("Names · recall",g.n+" people")+'<p class="muted small">New order. Who is who?</p><div class="faces">'+g.order.map((pi,j)=>'<div class="person">'+face(g.people[pi].seed)+'<input type="text" id="w'+j+'" autocomplete="off" spellcheck="false" enterkeyhint="next" aria-label="Name for person '+(j+1)+'"></div>').join("")+'</div><button class="btn primary block" data-act="submit">Check</button></div>'}
+  if(g.mode==="major"){const c=g.cur,k=c.k;const prompt=c.dir===0?'<div class="big-prompt">'+k+'</div>':'<div class="big-prompt word">'+MAJOR[k]+'</div>';
+    const opts=c.opts.map(o=>{let cls="opt"+(c.dir===1?" mono":"");if(c.picked){if(o===k)cls+=" right";else if(o===c.picked)cls+=" wrong"}return '<button class="'+cls+'" data-act="pick" data-o="'+o+'"'+(c.picked?" disabled":"")+'>'+(c.dir===0?MAJOR[o]:o)+'</button>'}).join("");
+    let fb="";if(c.picked&&c.picked!==k)fb='<div class="card stack"><p><b class="num" style="font-family:var(--mono)">'+k+'</b> = <b>'+MAJOR[k]+'</b></p><p class="small muted">'+k[0]+' → '+SOUNDS[+k[0]]+' · '+k[1]+' → '+SOUNDS[+k[1]]+'. Only consonant sounds count; vowels and w, h, y are free.</p><button class="btn primary block" data-act="next">Next</button></div>';
+    return '<div class="stack-lg">'+head("Major drill"+(g.practice?" · extra practice":""),"Card "+(g.i+1)+" of "+g.q.length)+'<div class="row between"><span class="small muted">'+(c.isNew?"New card":"Box "+S.major[k].box)+' · '+(c.dir===0?"digits → word":"word → digits")+'</span><span class="combo">'+(g.combo>1?"Combo ×"+g.combo:"")+'</span></div>'+prompt+'<div class="opts">'+opts+'</div>'+fb+'<button class="btn ghost small" data-act="go" data-v="code">See the full code</button></div>'}
+  return "";
+}
+function afterGame(){
+  if(G.phase==="study"||G.phase==="q")startTimer();
+  if(G.phase==="recall"){startTimer();const f=$("#numIn")||$("#w0");if(f)setTimeout(()=>f.focus(),60);
+    const ni=$("#numIn");if(ni)ni.addEventListener("input",()=>{$("#numCount").textContent=ni.value.replace(/\D/g,"").length+" / "+G.n});}
+  if(G.phase==="result")stopTimer();
+}
+const norm=s=>s.toLowerCase().replace(/[^a-z]/g,"");
+function same(a,b){a=norm(a);b=norm(b);if(!a)return false;if(a===b)return true;const t=x=>x.replace(/(es|s)$/,"");return t(a)===t(b)}
+
+function submit(){const g=G;let correct=0,score=0,detail="",perfect=false,adapt="";
+  const ms=Date.now()-g.t0;
+  if(g.mode==="numbers"){const ans=($("#numIn").value||"").replace(/\D/g,"");let cells="";
+    for(let i=0;i<g.n;i++){const ok=ans[i]===g.digits[i];if(ok)correct++;cells+='<span class="'+(ok?"ok":"no")+'">'+g.digits[i]+(ok?"":'<small>'+(ans[i]||"·")+'</small>')+'</span>'}
+    perfect=correct===g.n&&ans.length===g.n;score=correct*10+(perfect?g.n*5:0);if(g.used)score=Math.round(score/2);
+    const nl=perfect?g.n+2:correct/g.n>=.7?g.n:g.n-1;S.lvl.numbers=clamp(nl,4,120);
+    if(perfect&&!g.used)S.best.numbers=Math.max(S.best.numbers,g.n);
+    adapt=nl>g.n?"Next round: "+S.lvl.numbers+" digits.":nl<g.n?"Next round eases to "+S.lvl.numbers+" digits.":"Same length next round. Lock it in.";
+    detail='<div class="card stack"><span class="label">Your recall</span><div class="diff">'+cells+'</div><span class="small muted">Red cells show the right digit with what you typed underneath.</span></div>'}
+  if(g.mode==="words"||g.mode==="echo"){let rows="";
+    g.items.forEach((w,i)=>{const v=($("#w"+i).value||"").trim();const ok=same(v,w);if(ok)correct++;rows+='<div class="li"><span class="n">'+(i+1)+'</span><span class="loc">'+esc(locus(i))+'</span><span class="'+(ok?"mark-ok":"mark-no")+'">'+w+(ok||!v?"":' <span class="small muted">('+esc(v)+')</span>')+'</span></div>'});
+    perfect=correct===g.n;
+    if(g.mode==="words"){score=correct*15+(perfect?g.n*5:0);const nl=perfect?g.n+2:correct/g.n>=.7?g.n:g.n-2;S.lvl.words=clamp(nl,5,60);S.best.words=Math.max(S.best.words,correct);S.echo={items:g.items,at:Date.now()};
+      adapt=(nl>g.n?"Next round: "+S.lvl.words+" words.":nl<g.n?"Next round eases to "+S.lvl.words+" words.":"Same length next round.")+" An echo recall of this list unlocks in 10 minutes.";}
+    else{score=correct*20;if(correct/g.n>=.8)S.flags.echo=true;S.echo=null;adapt="Items you missed after a delay are the ones to re-image more vividly next time."}
+    detail='<div class="list">'+rows+'</div>'}
+  if(g.mode==="names"){let cards="";
+    g.order.forEach((pi,j)=>{const p=g.people[pi];const v=($("#w"+j).value||"").trim();const ok=norm(v)===norm(p.name);if(ok)correct++;cards+='<div class="person">'+face(p.seed)+'<b class="'+(ok?"mark-ok":"mark-no")+'">'+p.name+'</b><span class="small muted">'+(ok?p.job:(v?"You wrote "+esc(v):"Left blank"))+'</span></div>'});
+    perfect=correct===g.n;score=correct*15+(perfect?g.n*5:0);const nl=perfect?g.n+2:correct/g.n>=.7?g.n:g.n-1;S.lvl.names=clamp(nl,3,40);S.best.names=Math.max(S.best.names,correct);
+    adapt=nl>g.n?"Next round: "+S.lvl.names+" people.":nl<g.n?"Next round eases to "+S.lvl.names+" people.":"Same size next round.";
+    detail='<div class="faces">'+cards+'</div>'}
+  showResult(g.mode,{score,correct,total:g.n,ms,detail,adapt,perfect});
+}
+function pick(o){const g=G,c=g.cur;if(c.picked)return;c.picked=o;const k=c.k;const card=S.major[k]||{box:0,due:today()};
+  if(o===k){g.combo++;g.correct++;const pts=5+Math.min(g.combo,10);g.score+=pts;card.box=clamp(card.box+1,1,5);card.due=addDays(today(),INTERVAL[card.box]);S.major[k]=card;render();setTimeout(()=>{if(G===g)next()},650)}
+  else{g.combo=0;card.box=1;card.due=today();S.major[k]=card;g.missed.push(k);render()}
+  save();
+}
+function next(){const g=G;g.i++;if(g.i>=g.q.length){const learned=majorStats().slice(3).reduce((a,b)=>a+b,0);
+  showResult("major",{score:g.score,correct:g.correct,total:g.q.length,ms:Date.now()-g.t0,perfect:g.correct===g.q.length,adapt:"Cards you got right move up a box and come back later (1, 3, 7, then 16 days). Misses return tomorrow. "+learned+"/100 cards are in box 3 or higher.",
+   detail:g.missed.length?'<div class="card stack"><span class="label">Review these</span><div class="code">'+[...new Set(g.missed)].map(k=>'<div><b>'+k+'</b>'+MAJOR[k]+'</div>').join("")+'</div></div>':""});return}
+  newQ();render()}
+function showResult(mode,r){stopTimer();const out=finish(mode,r);const acc=Math.round(100*r.correct/Math.max(1,r.total));
+  let banners="";if(out.levelUp)banners+='<div class="banner lvl pop">Level '+out.levelUp.L+' reached · '+out.levelUp.rank+'</div>';
+  if(out.bonus)banners+='<div class="banner badge pop">Daily set complete · +50 XP</div>';
+  out.fresh.forEach(b=>banners+='<div class="banner badge pop">Badge earned: '+b[1]+' · '+b[2]+'</div>');
+  G={mode,phase:"result",html:'<div class="stack-lg"><div class="stack" style="gap:4px"><span class="label">'+MODES[mode]+' · '+fmt(r.ms)+'</span><div class="row" style="align-items:baseline;gap:14px"><span class="score num pop">+'+r.score+'</span><span class="muted">XP</span></div><p class="num"><b>'+r.correct+' / '+r.total+'</b> correct · '+acc+'%'+(r.perfect?' · perfect round':'')+'</p></div>'+banners+'<p class="muted">'+r.adapt+'</p>'+r.detail+'<div class="row"><button class="btn primary" data-act="start" data-m="'+(mode==="echo"?"words":mode)+'">'+(mode==="echo"?"New word palace":"Go again")+'</button><button class="btn" data-act="go" data-v="train">Back to training</button></div></div>'};
+  render();window.scrollTo(0,0);
+}
+
+/* ---------- progress ---------- */
+function chart(){const days=[];for(let i=29;i>=0;i--){const d=addDays(today(),-i);days.push([d,S.days[d]||0])}
+  const max=Math.max(50,...days.map(d=>d[1]));const W=300,H=110,top=14,base=92,bw=W/30;
+  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="XP per day, last 30 days">';
+  s+='<line x1="0" x2="'+W+'" y1="'+base+'" y2="'+base+'" stroke="var(--line)"/><line x1="0" x2="'+W+'" y1="'+top+'" y2="'+top+'" stroke="var(--line)" stroke-dasharray="3 3"/>';
+  s+='<text x="'+W+'" y="'+(top-4)+'" text-anchor="end" font-size="9" fill="var(--muted)">'+max+' XP</text>';
+  days.forEach((d,i)=>{const h=(d[1]/max)*(base-top);s+='<rect x="'+(i*bw+1.5)+'" y="'+(base-h)+'" width="'+(bw-3)+'" height="'+Math.max(h,d[1]?2:0)+'" rx="2" fill="'+(i===29?"var(--brass)":"var(--accent)")+'"/>'});
+  const lab=d=>{const p=d.split("-");return +p[2]+"/"+(+p[1])};
+  s+='<text x="0" y="'+(H-4)+'" font-size="9" fill="var(--muted)">'+lab(days[0][0])+'</text><text x="'+W+'" y="'+(H-4)+'" text-anchor="end" font-size="9" fill="var(--muted)">Today</text></svg>';return s}
+function progress(){const li=lvlInfo(S.xp),b=majorStats();
+  const hist=S.sessions.slice(0,12).map(s=>{const d=new Date(s.t);return '<div><span>'+MODES[s.mode]+' <span class="muted small">'+d.getDate()+'/'+(d.getMonth()+1)+' '+z(d.getHours())+':'+z(d.getMinutes())+'</span></span><span class="num">'+s.c+'/'+s.n+' · <b>+'+s.score+'</b></span></div>'}).join("")||'<p class="muted small">No sessions yet. Your first round will show up here.</p>';
+  return '<div class="stack-lg"><h1>Progress</h1>'+
+  '<section class="card stack"><div class="row between"><span class="rank">'+li.rank+'</span><span class="label">Level '+li.L+'</span></div><div class="bar"><i style="width:'+(li.pct*100).toFixed(1)+'%"></i></div><span class="small muted num">'+S.xp+' XP total · '+streak()+'-day streak</span></section>'+
+  '<section class="stack"><h2>Personal bests</h2><div class="bests">'+
+   '<div class="card best"><span class="label">Numbers</span><b>'+S.best.numbers+'</b><span class="small muted">digits, no errors, no hints</span></div>'+
+   '<div class="card best"><span class="label">Word palace</span><b>'+S.best.words+'</b><span class="small muted">words in one round</span></div>'+
+   '<div class="card best"><span class="label">Names</span><b>'+S.best.names+'</b><span class="small muted">names in one round</span></div>'+
+   '<div class="card best"><span class="label">Major code</span><b>'+(b[3]+b[4]+b[5])+'</b><span class="small muted">of 100 in box 3+</span></div></div>'+
+   '<p class="small muted">For scale: the 2017 Neuron study\'s trainees went from about 26 to 62 of 72 words after 40 days. World-class memory athletes recall hundreds of digits in five minutes.</p></section>'+
+  '<section class="card stack"><h3>Last 30 days</h3>'+chart()+'</section>'+
+  '<section class="card stack"><h3>Major code by box</h3><div class="boxes">'+["New","1","2","3","4","5"].map((l,i)=>'<div><b>'+b[i]+'</b>'+(i?"Box "+l:l)+'</div>').join("")+'</div></section>'+
+  '<section class="stack"><h2>Badges</h2><div class="badges">'+BADGES.map(x=>'<div class="bdg'+(S.badges.includes(x[0])?" on":"")+'"><b>'+x[1]+'</b>'+x[2]+'</div>').join("")+'</div></section>'+
+  '<section class="card stack"><h3>Recent sessions</h3><div class="hist">'+hist+'</div></section>'+
+  '<section class="card stack"><h3>Where your progress lives</h3><p class="small muted">Everything is stored in this browser\'s local storage on this device. Nothing is sent anywhere. Clearing site data or using a private window wipes it, so copy a backup code now and then and keep it in your notes.</p>'+
+   '<label for="exp" class="label">Backup code</label><textarea id="exp" readonly style="font-family:var(--mono);font-size:.72rem;min-height:80px"></textarea><button class="btn" data-act="copy">Copy backup code</button>'+
+   '<label for="imp" class="label" style="margin-top:8px">Restore from a code</label><textarea id="imp" placeholder="Paste a backup code here" style="font-family:var(--mono);font-size:.72rem;min-height:80px"></textarea><button class="btn" data-act="import">Restore progress</button>'+
+   '<button class="btn ghost" data-act="reset" id="resetBtn" style="color:var(--bad)">Reset all progress</button></section>'+
+  '</div>'}
+function fillBackup(){const e=$("#exp");if(e)e.value=btoa(unescape(encodeURIComponent(JSON.stringify(S))))}
+
+/* ---------- palace ---------- */
+function palace(){return '<div class="stack-lg"><h1>Your palace</h1>'+
+  '<p class="muted">The method of loci works because spatial memory is strong and automatic. Your route is the shelf; the images are what you store.</p>'+
+  (S.lociExample?'<div class="echo small"><b>This is an example route.</b> Replace it with spots from a place you know well: your home, office, or a walk you take daily.</div>':"")+
+  '<section class="card stack"><label for="loci" class="label">Spots in walking order, one per line</label><textarea id="loci" style="min-height:300px">'+esc(S.loci.join("\n"))+'</textarea><div class="row between"><span class="small muted num" id="lociCount">'+S.loci.length+' spots</span><button class="btn primary" data-act="saveloci">Save route</button></div></section>'+
+  '<section class="card stack"><h3>Building a good route</h3><ul class="small" style="margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px">'+
+   '<li>Walk it in one direction and never cross back. Order is what lets you recall a list in sequence.</li>'+
+   '<li>Choose spots that look different from each other. Two identical chairs blur together.</li>'+
+   '<li>Rehearse the empty route once until you can walk it in your head without looking.</li>'+
+   '<li>Aim for 20 spots, then build a second palace (office, school, a relative\'s flat) to reach 40, 60 and beyond.</li>'+
+   '<li>For numbers, place one Major image per spot. Later, combine two images per spot to double capacity.</li></ul></section></div>'}
+
+/* ---------- method ---------- */
+function method(){const c=(t,b,src,url)=>'<section class="card method"><h3>'+t+'</h3><p>'+b+'</p><p class="src">'+(url?'<a href="'+url+'" target="_blank" rel="noopener">'+src+'</a>':src)+'</p></section>';
+  return '<div class="stack-lg"><h1>Why this works</h1><p class="muted">Each game here uses a technique with research behind it. Superior memorizers are mostly made, not born: they use strategies, practised daily.</p>'+
+  c("Memory palace (method of loci)","Untrained adults practised the method of loci for 30 minutes a day over 40 days. Their recall of a 72-word list rose from about 26 to about 62 words, the gains were still present four months later, and their brain connectivity patterns shifted toward those of memory champions. This is the core of Word palace.","Dresler et al., 2017, Neuron","https://doi.org/10.1016/j.neuron.2017.02.003")+
+  c("Champions use strategy, not special brains","Brain imaging of top memory competitors found no structural advantage and no unusual general intelligence. Most of them reported using the method of loci, and it engaged spatial-navigation regions.","Maguire et al., 2003, Nature Neuroscience","https://doi.org/10.1038/nn988")+
+  c("Chunking numbers into meaning","A student with an ordinary digit span of about 7 reached 79 digits after roughly two years of practice by recoding digit groups into familiar meanings. The Major System does the same thing on purpose: 47 becomes r-k, a rock.","Ericsson, Chase & Faloon, 1980, Science","https://doi.org/10.1126/science.7375928")+
+  c("Retrieval practice","Testing yourself produces better long-term retention than re-reading the same material, even though re-reading feels more productive. Every game ends in active recall for this reason.","Roediger & Karpicke, 2006, Psychological Science","https://doi.org/10.1111/j.1467-9280.2006.01693.x")+
+  c("Spacing","Reviews spread over increasing gaps beat massed practice across hundreds of studies. The Major drill uses Leitner boxes (1, 3, 7, 16 days) and Echo recall retests your word list after a delay.","Cepeda et al., 2006, Psychological Bulletin","https://doi.org/10.1037/0033-2909.132.3.354")+
+  c("Names and faces","Names are hard because they carry no meaning. The fix is elaborative encoding: turn the name into a concrete image and attach it to a distinctive feature of the face, then test yourself. The same imagery and retrieval principles apply.","Applied from the loci and retrieval research above","")+
+  c("What to expect","Generic brain-training games show little transfer to everyday memory. The gains here come from strategies, so use them on real material: phone numbers, names at meetings, talk outlines, shopping lists. That is where the skill becomes yours.","Simons et al., 2016, Psychological Science in the Public Interest","https://doi.org/10.1177/1529100616661983")+
+  '<section class="card stack"><h3>The Major System</h3><p class="small">Each digit is a consonant sound. Vowels and w, h, y are fillers. Two digits make one image.</p><div class="sounds">'+SOUNDS.map((s,i)=>'<div><b>'+i+'</b>'+s+'</div>').join("")+'</div><button class="btn" data-act="go" data-v="code">See all 100 images</button></section>'+
+  '<section class="card stack"><h3>A weekly rhythm</h3><p class="small">Daily: Major drill (5 min), one Word palace round, one Numbers round, one Names round. That is the daily set and roughly the 30-minute dose from the Neuron study. Come back after 10 minutes or more for Echo recall.</p></section></div>'}
+function codeTable(){return '<div class="stack-lg"><div class="row between"><h1>The 00–99 code</h1><button class="btn ghost" data-act="go" data-v="'+(G?"train":"method")+'">Back</button></div><div class="sounds">'+SOUNDS.map((s,i)=>'<div><b>'+i+'</b>'+s+'</div>').join("")+'</div><div class="code">'+Object.keys(MAJOR).map(k=>'<div><b>'+k+'</b>'+MAJOR[k]+'</div>').join("")+'</div></div>'}
+
+/* ---------- events ---------- */
+let resetArmed=false;
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const a=b.dataset.act;
+  if(a==="go"){if(b.dataset.v==="code"&&G&&G.mode==="major"){stopTimer();G=null}go(b.dataset.v)}
+  else if(a==="start")start(b.dataset.m);
+  else if(a==="quit"){go("train")}
+  else if(a==="hints"){G.hints=!G.hints;if(G.hints)G.used=true;render()}
+  else if(a==="recall"){G.phase="recall";render();window.scrollTo(0,0)}
+  else if(a==="submit")submit();
+  else if(a==="pick")pick(b.dataset.o);
+  else if(a==="next")next();
+  else if(a==="saveloci"){const v=$("#loci").value.split("\n").map(s=>s.trim()).filter(Boolean);if(v.length<5){toast("Add at least 5 spots to your route");return}S.loci=v.slice(0,200);S.lociExample=false;save();toast("Route saved · "+S.loci.length+" spots");render()}
+  else if(a==="copy"){const t=$("#exp");const done=()=>toast("Backup code copied");try{navigator.clipboard.writeText(t.value).then(done,()=>{t.select();toast("Selected. Copy it manually")})}catch(err){t.select();toast("Selected. Copy it manually")}}
+  else if(a==="import"){const raw=($("#imp").value||"").trim();if(!raw){toast("Paste a backup code first");return}
+    try{const o=JSON.parse(decodeURIComponent(escape(atob(raw))));if(typeof o.xp!=="number")throw 0;S=Object.assign(defaults(),o);save();toast("Progress restored");render()}catch(err){toast("That code didn't work. Copy the whole code and try again")}}
+  else if(a==="reset"){if(!resetArmed){resetArmed=true;b.textContent="Tap again to erase everything";setTimeout(()=>{resetArmed=false;const r=$("#resetBtn");if(r)r.textContent="Reset all progress"},4000)}else{resetArmed=false;S=defaults();save();toast("Progress reset");render()}}
+});
+document.addEventListener("keydown",e=>{if(e.key!=="Enter"||!G||G.phase!=="recall")return;const t=e.target;if(t.id==="numIn"){e.preventDefault();submit();return}
+  if(t.id&&/^w\d+$/.test(t.id)){e.preventDefault();const n=$("#w"+(+t.id.slice(1)+1));if(n)n.focus();else submit()}});
+document.addEventListener("input",e=>{if(e.target.id==="loci"){const c=$("#lociCount");if(c)c.textContent=e.target.value.split("\n").filter(s=>s.trim()).length+" spots"}});
+
+save();render();
+})();
+</script>
+
+</body>
+</html>
